@@ -7,171 +7,106 @@ from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-# Configuration
+# 18-Class Configuration
 DATASET_PATH_TRAIN = "data/train"
 DATASET_PATH_VAL = "data/val"
-TARGET_CATEGORIES = ["PCB", "Cables", "Batteries", "LCD_Panels", "Other"]
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
-NUM_CLASSES = 5
-EPOCHS = 20
+MAX_IMAGES_PER_CLASS = 250 # Capping to prevent timeouts!
 
-# Max images per class to prevent memory issues and keep the training fast
-MAX_IMAGES_PER_CLASS = 150
+def cap_dataset(source_dir, dest_dir, max_images):
+    print(f"Capping dataset from {source_dir} to {dest_dir} (Max {max_images} imgs/class)...")
+    if os.path.exists(dest_dir):
+        shutil.rmtree(dest_dir)
+    os.makedirs(dest_dir)
 
-def reorganize_and_cap_dataset(source_dir, dest_dir, max_images):
-    print(f"Reorganizing and capping dataset from {source_dir} to {dest_dir} (max {max_images} imgs/class)...")
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir)
+    classes = os.listdir(source_dir)
+    for cls in classes:
+        cls_path = os.path.join(source_dir, cls)
+        if not os.path.isdir(cls_path): continue
 
-    for cat in TARGET_CATEGORIES:
-        os.makedirs(os.path.join(dest_dir, cat), exist_ok=True)
+        dest_cls_path = os.path.join(dest_dir, cls)
+        os.makedirs(dest_cls_path, exist_ok=True)
 
-    category_mapping = {
-        "PCB": "PCB", "Microchip-IC": "PCB", "transistor": "PCB",
-        "Resistor": "PCB", "Passive-Components": "PCB",
-        "Battery": "Batteries",
-        "Laptop": "LCD_Panels", "Television": "LCD_Panels", "Mobile": "LCD_Panels",
-        "Air-Conditioner": "Other", "Keyboard": "Other", "Microwave": "Other",
-        "Mouse": "Other", "Printer": "Other", "Refrigerator": "Other",
-        "Washing Machine": "Other", "heat-sink": "Other", "light bulbs": "Other"
-    }
+        files = os.listdir(cls_path)
+        random.shuffle(files) # Shuffle so we get a diverse mix
 
-    # Keep track of how many images we've copied for each TARGET category
-    copied_counts = {cat: 0 for cat in TARGET_CATEGORIES}
+        for img_name in files[:max_images]:
+            shutil.copy(os.path.join(cls_path, img_name), os.path.join(dest_cls_path, img_name))
 
-    if os.path.exists(source_dir):
-        # We process folders, but we want to shuffle the files so we don't just get one type
-        for original_class in os.listdir(source_dir):
-            original_path = os.path.join(source_dir, original_class)
-            if not os.path.isdir(original_path): continue
+capped_train_dir = "warbage_capped_train"
+capped_val_dir = "warbage_capped_val"
+cap_dataset(DATASET_PATH_TRAIN, capped_train_dir, MAX_IMAGES_PER_CLASS)
+cap_dataset(DATASET_PATH_VAL, capped_val_dir, int(MAX_IMAGES_PER_CLASS * 0.2)) # 20% for val
 
-            target_class = category_mapping.get(original_class, "Other")
-
-            # Get all files and shuffle them
-            files = os.listdir(original_path)
-            random.shuffle(files)
-
-            for img_name in files:
-                if copied_counts[target_class] >= max_images:
-                    break # Stop copying for this target class if we hit the limit
-
-                src_file = os.path.join(original_path, img_name)
-                dst_file = os.path.join(dest_dir, target_class, f"{original_class}_{img_name}")
-
-                if not os.path.exists(dst_file):
-                    shutil.copy(src_file, dst_file)
-                    copied_counts[target_class] += 1
-
-    print(f"Final counts in {dest_dir}: {copied_counts}")
-
-# Create the mapped dataset directories, capping at our limit
-mapped_train_dir = "warbage_mapped_train"
-mapped_val_dir = "warbage_mapped_val"
-reorganize_and_cap_dataset(DATASET_PATH_TRAIN, mapped_train_dir, MAX_IMAGES_PER_CLASS)
-# For validation, we need even fewer (e.g. 20% of max)
-reorganize_and_cap_dataset(DATASET_PATH_VAL, mapped_val_dir, int(MAX_IMAGES_PER_CLASS * 0.2))
-
-# 1. Prepare Data Loaders
+# --- 2. Prepare Data Loaders ---
+# IMPORTANT FIX: MobileNetV3 internally expects [0, 255] and rescales it to [-1, 1].
+# If we pass rescale=1./255, the model sees everything as black!
 train_datagen = ImageDataGenerator(
-    rescale=1./255,
-    rotation_range=20,
+    # NO RESCALE HERE!
+    rotation_range=30,
     width_shift_range=0.2,
     height_shift_range=0.2,
+    zoom_range=0.2,
     horizontal_flip=True,
     brightness_range=[0.8, 1.2]
 )
-val_datagen = ImageDataGenerator(rescale=1./255)
+val_datagen = ImageDataGenerator() # NO RESCALE HERE!
 
 print("Loading training dataset...")
 train_generator = train_datagen.flow_from_directory(
-    mapped_train_dir,
-    target_size=IMG_SIZE,
-    batch_size=BATCH_SIZE,
-    class_mode='categorical'
+    capped_train_dir, target_size=IMG_SIZE, batch_size=BATCH_SIZE, class_mode='categorical'
 )
 
 print("Loading validation dataset...")
 val_generator = val_datagen.flow_from_directory(
-    mapped_val_dir,
-    target_size=IMG_SIZE,
-    batch_size=BATCH_SIZE,
-    class_mode='categorical',
-    shuffle=False
+    capped_val_dir, target_size=IMG_SIZE, batch_size=BATCH_SIZE, class_mode='categorical', shuffle=False
 )
 
 labels = list(train_generator.class_indices.keys())
-print(f"Classes: {labels}")
+NUM_CLASSES = len(labels)
+print(f"Classes ({NUM_CLASSES}): {labels}")
 
-# 2. Load Pretrained MobileNetV3Small
+# --- 3. Build Model ---
 base_model = MobileNetV3Small(weights='imagenet', include_top=False, input_shape=IMG_SIZE + (3,))
 base_model.trainable = False
 
-# 3. Add Custom Classification Head
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
-x = Dropout(0.2)(x)
+x = Dropout(0.3)(x)
 predictions = Dense(NUM_CLASSES, activation='softmax')(x)
-
 model = Model(inputs=base_model.input, outputs=predictions)
 
-# 4. Compile Model
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-    loss='categorical_crossentropy',
-    metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall()]
+# --- 4. Train Head (Phase 1) ---
+print("Starting Phase 1 Training...")
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+model.fit(
+    train_generator, epochs=10, validation_data=val_generator,
+    callbacks=[tf.keras.callbacks.EarlyStopping(patience=3, restore_best_weights=True)]
 )
 
-# 5. Train Model
-print("Starting training...")
-history = model.fit(
-    train_generator,
-    epochs=EPOCHS,
-    validation_data=val_generator,
-    callbacks=[
-        tf.keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True),
-        tf.keras.callbacks.ModelCheckpoint('best_model.keras', save_best_only=True)
-    ]
-)
-
-# 6. Evaluate Model
-print("Evaluating model...")
-loss, accuracy, precision, recall = model.evaluate(val_generator)
-print(f"Validation Accuracy: {accuracy*100:.2f}%")
-
-# (Optional) Fine-Tuning
-print("Unfreezing upper layers for fine-tuning...")
+# --- 5. Fine-Tune (Phase 2) ---
+print("Starting Phase 2 Fine-Tuning...")
 base_model.trainable = True
-for layer in base_model.layers[:-20]:
+for layer in base_model.layers[:-30]:
     layer.trainable = False
 
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
-    loss='categorical_crossentropy',
-    metrics=['accuracy']
-)
-
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5), loss='categorical_crossentropy', metrics=['accuracy'])
 model.fit(
-    train_generator,
-    epochs=5,
-    validation_data=val_generator,
-    callbacks=[
-        tf.keras.callbacks.EarlyStopping(patience=3, restore_best_weights=True)
-    ]
+    train_generator, epochs=10, validation_data=val_generator,
+    callbacks=[tf.keras.callbacks.EarlyStopping(patience=3, restore_best_weights=True)]
 )
 
-# 7. Convert and Export to TensorFlow Lite
+# --- 6. Export ---
 print("Converting to TensorFlow Lite...")
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
 converter.optimizations = [tf.lite.Optimize.DEFAULT]
 tflite_model = converter.convert()
 
-tflite_model_path = "warbage_ewaste_model.tflite"
-with open(tflite_model_path, 'wb') as f:
+with open("warbage_ewaste_model.tflite", 'wb') as f:
     f.write(tflite_model)
-print(f"Saved TFLite model to {tflite_model_path}")
-
 with open("labels.txt", "w") as f:
     for label in labels:
         f.write(label + "\n")
-print("Saved labels.txt")
+
+print("✅ DONE! Download 'warbage_ewaste_model.tflite' and 'labels.txt' from the left menu.")
