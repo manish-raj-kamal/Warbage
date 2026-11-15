@@ -6,6 +6,9 @@ require('dotenv').config();
 const Material = require('./models/Material');
 const Transaction = require('./models/Transaction');
 const Price = require('./models/Price');
+const User = require('./models/User');
+const Lot = require('./models/Lot');
+const Request = require('./models/Request');
 
 const app = express();
 app.use(cors());
@@ -61,6 +64,100 @@ app.post('/api/transactions', async (req, res) => {
     const transaction = new Transaction(req.body);
     await transaction.save();
     res.status(201).json(transaction);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// --- Users API ---
+app.get('/api/users', async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.role) filter.role = req.query.role;
+    const users = await User.find(filter);
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// --- Lots API ---
+app.get('/api/lots', async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.collectorId) filter.collectorId = req.query.collectorId;
+    if (req.query.status) filter.status = req.query.status;
+    const lots = await Lot.find(filter).sort({ dateCreated: -1 });
+    res.json(lots);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/lots', async (req, res) => {
+  try {
+    const lot = new Lot(req.body);
+    await lot.save();
+    res.status(201).json(lot);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/lots/:id/status', async (req, res) => {
+  try {
+    const lot = await Lot.findOneAndUpdate(
+      { lotId: req.params.id },
+      { status: req.body.status },
+      { new: true }
+    );
+    res.json(lot);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// --- Requests API ---
+app.get('/api/requests', async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.recyclerId) filter.recyclerId = req.query.recyclerId;
+    if (req.query.lotId) filter.lotId = req.query.lotId;
+    const requests = await Request.find(filter).sort({ dateCreated: -1 });
+    res.json(requests);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/requests', async (req, res) => {
+  try {
+    const request = new Request(req.body);
+    await request.save();
+    res.status(201).json(request);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/requests/:id/status', async (req, res) => {
+  try {
+    const request = await Request.findOneAndUpdate(
+      { requestId: req.params.id },
+      { status: req.body.status, updatedAt: Date.now() },
+      { new: true }
+    );
+    res.json(request);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
