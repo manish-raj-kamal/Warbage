@@ -1,5 +1,18 @@
-Batteries
-Cables
-LCD_Panels
-Other
+Air-Conditioner
+Battery
+Keyboard
+Laptop
+Microchip-IC
+Microwave
+Mobile
+Mouse
 PCB
+Passive-Component
+Printer
+Refrigerator
+Resistor
+Television
+Washing Machine
+heat-sink
+light bulbs
+transistor

@@ -126,17 +126,26 @@ class MaterialClassifier(context: Context) : AutoCloseable {
 
         val labelName = if (maxIdx < labels.size) labels[maxIdx] else "Other"
 
+        // Map the original 18 granular Kaggle classes down to our 5 database categories
         val mappedId = when (labelName) {
-            "Batteries" -> 3
-            "Cables" -> 2
-            "LCD_Panels" -> 4
-            "Other" -> 7
-            "PCB" -> 1
-            else -> 7
+            "PCB", "Microchip-IC", "transistor", "Resistor", "Passive-Component" -> 1 // PCB
+            "Cables" -> 2 // Cables (In case it's added later, not in this dataset)
+            "Battery" -> 3 // Batteries
+            "Laptop", "Television", "Mobile" -> 4 // LCD_Panels
+            else -> 7 // Other (Air-Conditioner, Keyboard, Microwave, Mouse, Printer, Refrigerator, Washing Machine, heat-sink, light bulbs)
+        }
+
+        // Return the user-friendly category name rather than the granular raw label
+        val displayName = when (mappedId) {
+            1 -> "Printed Circuit Board"
+            2 -> "Cables"
+            3 -> "Batteries"
+            4 -> "Display Panels"
+            else -> "Other E-Waste"
         }
 
         AiResult(
-            materialName = labelName,
+            materialName = displayName,
             materialId = mappedId,
             confidence = maxProb
         )
