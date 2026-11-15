@@ -1,0 +1,5 @@
+Batteries
+Cables
+LCD_Panels
+Other
+PCB

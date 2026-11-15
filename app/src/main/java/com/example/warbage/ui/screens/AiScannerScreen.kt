@@ -1,41 +1,35 @@
 package com.example.warbage.ui.screens
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.ImageFormat
-import android.graphics.YuvImage
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.warbage.ai.MaterialClassifier
-import java.io.ByteArrayOutputStream
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import kotlinx.coroutines.launch
 
 data class AiResult(
     val materialName: String,
@@ -50,37 +44,53 @@ fun AiScannerScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
+    val classifier = remember { MaterialClassifier(context) }
 
-    var hasCameraPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context, Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
+    var currentBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var aiResult by remember { mutableStateOf<AiResult?>(null) }
+    var isProcessing by remember { mutableStateOf(false) }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        hasCameraPermission = granted
-    }
-
-    LaunchedEffect(Unit) {
-        if (!hasCameraPermission) {
-            permissionLauncher.launch(Manifest.permission.CAMERA)
+    // Uses the Native Android Camera App interface!
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        bitmap?.let {
+            currentBitmap = it
+            isProcessing = true
+            coroutineScope.launch {
+                val result = classifier.classify(it)
+                aiResult = result
+                isProcessing = false
+            }
         }
     }
 
-    var aiResult by remember { mutableStateOf<AiResult?>(null) }
-    var isProcessing by remember { mutableStateOf(false) }
-    val imageCapture = remember { ImageCapture.Builder().build() }
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-    val classifier = remember { MaterialClassifier() }
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            coroutineScope.launch {
+                try {
+                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, it))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+                    }
+                    // Copy to ensure it's a software bitmap which Compose and our AI can safely process
+                    val softwareBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false)
+                    currentBitmap = softwareBitmap
+                    isProcessing = true
 
-    DisposableEffect(Unit) {
-        onDispose {
-            cameraExecutor.shutdown()
+                    val result = classifier.classify(softwareBitmap)
+                    aiResult = result
+                } catch (e: Exception) {
+                    // handle error
+                } finally {
+                    isProcessing = false
+                }
+            }
         }
     }
 
@@ -101,71 +111,97 @@ fun AiScannerScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (hasCameraPermission) {
-                // Camera preview
+            if (currentBitmap == null) {
+                // Empty State: Prompt user to open native camera or gallery
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            modifier = Modifier.size(72.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                        )
+                        Text(
+                            text = "Scan E-Waste",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Take a photo or choose from your gallery\nto identify electronic waste.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Button(
+                                onClick = { takePictureLauncher.launch(null) },
+                                modifier = Modifier.height(56.dp)
+                            ) {
+                                Icon(Icons.Default.CameraAlt, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Open Camera")
+                            }
+                            FilledTonalButton(
+                                onClick = { galleryLauncher.launch("image/*") },
+                                modifier = Modifier.height(56.dp)
+                            ) {
+                                Icon(Icons.Default.PhotoLibrary, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Gallery")
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Image Preview State
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    AndroidView(
-                        factory = { ctx ->
-                            val previewView = PreviewView(ctx)
-                            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                            cameraProviderFuture.addListener({
-                                val cameraProvider = cameraProviderFuture.get()
-                                val preview = Preview.Builder().build().also {
-                                    it.surfaceProvider = previewView.surfaceProvider
-                                }
-                                try {
-                                    cameraProvider.unbindAll()
-                                    cameraProvider.bindToLifecycle(
-                                        lifecycleOwner,
-                                        CameraSelector.DEFAULT_BACK_CAMERA,
-                                        preview,
-                                        imageCapture
-                                    )
-                                } catch (_: Exception) {
-                                    // Camera binding failed
-                                }
-                            }, ContextCompat.getMainExecutor(ctx))
-                            previewView
-                        },
-                        modifier = Modifier.fillMaxSize()
+                    Image(
+                        bitmap = currentBitmap!!.asImageBitmap(),
+                        contentDescription = "Captured Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentScale = ContentScale.Fit
                     )
 
-                    // Capture overlay text
-                    if (!isProcessing && aiResult == null) {
-                        Card(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
-                            )
-                        ) {
-                            Text(
-                                text = "Point camera at e-waste material",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-                    }
-
                     if (isProcessing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
 
-                // Result section
-                AnimatedVisibility(visible = aiResult != null) {
+                // Result Section
+                AnimatedVisibility(visible = aiResult != null && !isProcessing) {
                     aiResult?.let { result ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
                             ),
@@ -194,6 +230,15 @@ fun AiScannerScreen(
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                 )
+                                if (result.confidence < 0.6f) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Unable to identify this material confidently. Please select the material manually.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.error,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -201,11 +246,12 @@ fun AiScannerScreen(
                                 ) {
                                     OutlinedButton(
                                         onClick = {
+                                            currentBitmap = null
                                             aiResult = null
                                         },
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Retry")
+                                        Text("Retake")
                                     }
                                     Button(
                                         onClick = { onMaterialDetected(result.materialId) },
@@ -218,102 +264,7 @@ fun AiScannerScreen(
                         }
                     }
                 }
-
-                // Capture button
-                if (aiResult == null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        FloatingActionButton(
-                            onClick = {
-                                if (!isProcessing) {
-                                    isProcessing = true
-                                    imageCapture.takePicture(
-                                        cameraExecutor,
-                                        object : ImageCapture.OnImageCapturedCallback() {
-                                            override fun onCaptureSuccess(image: ImageProxy) {
-                                                val bitmap = image.toBitmapCompat()
-                                                val result = classifier.classify(bitmap)
-                                                aiResult = result
-                                                isProcessing = false
-                                                image.close()
-                                            }
-
-                                            override fun onError(exception: ImageCaptureException) {
-                                                isProcessing = false
-                                            }
-                                        }
-                                    )
-                                }
-                            },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(72.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.CameraAlt,
-                                contentDescription = "Capture",
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    }
-                }
-            } else {
-                // No permission
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "📷",
-                            style = MaterialTheme.typography.displayLarge
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Camera permission required",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = "Grant camera access to use AI Scanner",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = {
-                            permissionLauncher.launch(Manifest.permission.CAMERA)
-                        }) {
-                            Text("Grant Permission")
-                        }
-                    }
-                }
             }
         }
-    }
-}
-
-/**
- * Convert ImageProxy to Bitmap.
- * Works across different image formats.
- */
-private fun ImageProxy.toBitmapCompat(): Bitmap {
-    val buffer = planes[0].buffer
-    val bytes = ByteArray(buffer.remaining())
-    buffer.get(bytes)
-
-    return if (format == ImageFormat.JPEG) {
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-    } else {
-        // YUV to JPEG conversion
-        val yuvImage = YuvImage(
-            bytes, ImageFormat.NV21, width, height, null
-        )
-        val out = ByteArrayOutputStream()
-        yuvImage.compressToJpeg(android.graphics.Rect(0, 0, width, height), 100, out)
-        val jpegBytes = out.toByteArray()
-        BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)
     }
 }

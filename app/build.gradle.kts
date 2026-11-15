@@ -27,6 +27,11 @@ android {
             }
         }
     }
+    
+    androidResources {
+        noCompress += "tflite"
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -78,6 +83,9 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.play.services.maps)
     implementation(libs.maps.compose)
+    
+    // LiteRT
+    implementation("com.google.ai.edge.litert:litert:2.1.6")
 
     // Testing
     testImplementation(libs.junit)
