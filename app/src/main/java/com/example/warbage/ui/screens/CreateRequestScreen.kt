@@ -1,22 +1,27 @@
 package com.example.warbage.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.warbage.data.WarbageDatabase
 import com.example.warbage.data.entity.RequestEntity
 import com.example.warbage.data.repository.LotRepository
 import com.example.warbage.data.repository.RequestRepository
+import com.example.warbage.ui.glass.GlassButton
+import com.example.warbage.ui.glass.GlassCard
+import com.example.warbage.ui.glass.GlassIconButton
+import com.example.warbage.ui.glass.LiquidTopAppBar
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateRequestScreen(
     database: WarbageDatabase,
@@ -38,12 +43,16 @@ fun CreateRequestScreen(
     var isSubmitting by remember { mutableStateOf(false) }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            LiquidTopAppBar(
                 title = { Text("Submit Request", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    GlassIconButton(
+                        onClick = onBack,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             )
@@ -61,62 +70,51 @@ fun CreateRequestScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Handover Request",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                    text = "Handover Summary",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // Lot info
-                InfoCard(
-                    title = "Lot",
-                    content = currentLot.lotId
-                )
+                // Lot info glass cards
+                InfoGlassCard("Lot Identifier", currentLot.lotId)
+                InfoGlassCard("Material", material?.let { "${it.icon} ${it.name}" } ?: "Loading...")
+                InfoGlassCard("Weight", "${currentLot.weight} kg")
+                InfoGlassCard("Estimated Value", "₹${String.format("%,.0f", currentLot.estimatedMinValue)} – ₹${String.format("%,.0f", currentLot.estimatedMaxValue)}")
 
-                InfoCard(
-                    title = "Material",
-                    content = material?.let { "${it.icon} ${it.name}" } ?: "Loading..."
-                )
-
-                InfoCard(
-                    title = "Weight",
-                    content = "${currentLot.weight} kg"
-                )
-
-                InfoCard(
-                    title = "Estimated Value",
-                    content = "₹${String.format("%,.0f", currentLot.estimatedMinValue)} – ₹${String.format("%,.0f", currentLot.estimatedMaxValue)}"
-                )
-
-                // Recycler info
-                Card(
+                // Recycler Glass Card
+                GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-                    )
+                    shape = RoundedCornerShape(22.dp),
+                    tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f),
+                    elevation = 4.dp
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         Text(
-                            text = "Recycler",
+                            text = "Target Recycler",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.SemiBold
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = currentRecycler.name,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "${currentRecycler.location} • ₹${currentRecycler.pricePerKg}/kg",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Button(
+                GlassButton(
                     onClick = {
                         if (!isSubmitting) {
                             isSubmitting = true
@@ -138,22 +136,22 @@ fun CreateRequestScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = !isSubmitting
+                    enabled = !isSubmitting,
+                    isLoading = isSubmitting,
+                    shape = RoundedCornerShape(18.dp)
                 ) {
-                    if (isSubmitting) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Icon(Icons.Default.Send, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Submit Request",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Submit Request",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         } else {
@@ -163,31 +161,31 @@ fun CreateRequestScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
     }
 }
 
 @Composable
-private fun InfoCard(title: String, content: String) {
-    Card(
+private fun InfoGlassCard(title: String, content: String) {
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        shape = RoundedCornerShape(18.dp),
+        elevation = 2.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = content,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

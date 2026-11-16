@@ -4,12 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.example.warbage.navigation.WarbageNavGraph
+import com.example.warbage.ui.glass.LiquidBackdropHost
 import com.example.warbage.ui.theme.WarbageTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,17 +16,16 @@ class MainActivity : ComponentActivity() {
 
         val app = application as WarbageApplication
         val database = app.database
+        val authManager = app.authManager
 
         setContent {
             WarbageTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                LiquidBackdropHost {
                     val navController = rememberNavController()
                     WarbageNavGraph(
                         navController = navController,
-                        database = database
+                        database = database,
+                        authManager = authManager
                     )
                 }
             }

@@ -9,10 +9,12 @@ import com.example.warbage.data.dao.LotDao
 import com.example.warbage.data.dao.MaterialDao
 import com.example.warbage.data.dao.RecyclerDao
 import com.example.warbage.data.dao.RequestDao
+import com.example.warbage.data.dao.UserDao
 import com.example.warbage.data.entity.LotEntity
 import com.example.warbage.data.entity.MaterialEntity
 import com.example.warbage.data.entity.RecyclerEntity
 import com.example.warbage.data.entity.RequestEntity
+import com.example.warbage.data.entity.UserEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,9 +24,10 @@ import kotlinx.coroutines.launch
         MaterialEntity::class,
         RecyclerEntity::class,
         LotEntity::class,
-        RequestEntity::class
+        RequestEntity::class,
+        UserEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class WarbageDatabase : RoomDatabase() {
@@ -33,6 +36,7 @@ abstract class WarbageDatabase : RoomDatabase() {
     abstract fun recyclerDao(): RecyclerDao
     abstract fun lotDao(): LotDao
     abstract fun requestDao(): RequestDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile
@@ -45,6 +49,7 @@ abstract class WarbageDatabase : RoomDatabase() {
                     WarbageDatabase::class.java,
                     "warbage_database"
                 )
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .addCallback(PrepopulateCallback())
                     .build()
                 INSTANCE = instance

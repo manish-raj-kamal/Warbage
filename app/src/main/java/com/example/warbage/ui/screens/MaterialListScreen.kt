@@ -10,12 +10,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.warbage.data.WarbageDatabase
 import com.example.warbage.ui.components.MaterialCard
+import com.example.warbage.ui.glass.GlassIconButton
+import com.example.warbage.ui.glass.LiquidTopAppBar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MaterialListScreen(
     database: WarbageDatabase,
@@ -25,12 +27,20 @@ fun MaterialListScreen(
     val materials by database.materialDao().getAllMaterials().collectAsState(initial = emptyList())
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            LiquidTopAppBar(
                 title = { Text("E-Waste Materials", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    GlassIconButton(
+                        onClick = onBack,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             )
@@ -40,8 +50,8 @@ fun MaterialListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(materials, key = { it.id }) { material ->
                 MaterialCard(

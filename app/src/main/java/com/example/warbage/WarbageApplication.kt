@@ -6,7 +6,9 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.warbage.auth.AuthManager
 import com.example.warbage.data.WarbageDatabase
+import com.example.warbage.data.repository.UserRepository
 import com.example.warbage.util.NotificationHelper
 import com.example.warbage.worker.SyncWorker
 import java.util.concurrent.TimeUnit
@@ -16,11 +18,19 @@ class WarbageApplication : Application() {
     lateinit var database: WarbageDatabase
         private set
 
+    lateinit var userRepository: UserRepository
+        private set
+
+    lateinit var authManager: AuthManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
 
         // Initialize database (triggers prepopulation on first launch)
         database = WarbageDatabase.getDatabase(this)
+        userRepository = UserRepository(database.userDao())
+        authManager = AuthManager(userRepository)
 
         // Create notification channel
         NotificationHelper.createNotificationChannel(this)

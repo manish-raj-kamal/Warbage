@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "28003673307",
+    "project_id": "warbage-c6edc",
+    "storage_bucket": "warbage-c6edc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:28003673307:android:ad1c0f5c7523fc506818fe",
+        "android_client_info": {
+          "package_name": "com.example.warbage"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "28003673307-njda16q87gtv33q1s0mdbp2coivvi6vr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.warbage",
+            "certificate_hash": "c0c7e4cfa7f66a10145624a4cc28ee45c2eca1eb"
+          }
+        },
+        {
+          "client_id": "28003673307-gno54bgcafonddlgfot5s4kns15of4gk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByenGvu8yMwlOJhU9RA_B38JyrUwpnZXY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "28003673307-gno54bgcafonddlgfot5s4kns15of4gk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

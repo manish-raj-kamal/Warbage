@@ -1,6 +1,7 @@
 package com.example.warbage.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -8,17 +9,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.warbage.data.WarbageDatabase
 import com.example.warbage.data.repository.LotRepository
 import com.example.warbage.data.repository.RequestRepository
 import com.example.warbage.ui.components.StatusBadge
+import com.example.warbage.ui.glass.GlassButton
+import com.example.warbage.ui.glass.GlassCard
+import com.example.warbage.ui.glass.GlassIconButton
+import com.example.warbage.ui.glass.LiquidTopAppBar
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RequestDetailScreen(
     database: WarbageDatabase,
@@ -37,12 +42,16 @@ fun RequestDetailScreen(
     val dateFormat = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            LiquidTopAppBar(
                 title = { Text("Request Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    GlassIconButton(
+                        onClick = onBack,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             )
@@ -60,46 +69,48 @@ fun RequestDetailScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Request header
-                Card(
+                // Request Hero Glass Card
+                GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                    shape = RoundedCornerShape(26.dp),
+                    elevation = 6.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             text = req.requestId,
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         StatusBadge(status = req.status)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = dateFormat.format(Date(req.dateCreated)),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                // Lot details
+                // Lot details glass cards
                 if (lot != null) {
-                    DetailInfoCard("Lot", lot.lotId)
-                    DetailInfoCard("Material", material?.let { "${it.icon} ${it.name}" } ?: "Unknown")
-                    DetailInfoCard("Weight", "${lot.weight} kg")
-                    DetailInfoCard(
+                    DetailGlassInfoCard("Lot Identifier", lot.lotId)
+                    DetailGlassInfoCard("Material", material?.let { "${it.icon} ${it.name}" } ?: "Unknown")
+                    DetailGlassInfoCard("Weight", "${lot.weight} kg")
+                    DetailGlassInfoCard(
                         "Estimated Value",
                         "₹${String.format("%,.0f", lot.estimatedMinValue)} – ₹${String.format("%,.0f", lot.estimatedMaxValue)}"
                     )
                 }
+
                 if (recycler != null) {
-                    DetailInfoCard("Recycler", "${recycler.name} (${recycler.location})")
+                    DetailGlassInfoCard("Recycler", "${recycler.name} (${recycler.location})")
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -111,7 +122,7 @@ fun RequestDetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            OutlinedButton(
+                            GlassButton(
                                 onClick = {
                                     scope.launch {
                                         requestRepository.updateStatus(req.id, "rejected")
@@ -119,31 +130,32 @@ fun RequestDetailScreen(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                )
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(16.dp)
                             ) {
-                                Icon(Icons.Default.Close, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Reject")
+                                Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Reject", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                             }
-                            Button(
+
+                            GlassButton(
                                 onClick = {
                                     scope.launch {
                                         requestRepository.updateStatus(req.id, "accepted")
                                         lot?.let { lotRepository.updateStatus(it.id, "accepted") }
                                     }
                                 },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(16.dp)
                             ) {
-                                Icon(Icons.Default.Check, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Accept")
+                                Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Accept", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                     "accepted" -> {
-                        Button(
+                        GlassButton(
                             onClick = {
                                 scope.launch {
                                     requestRepository.updateStatus(req.id, "completed")
@@ -152,28 +164,30 @@ fun RequestDetailScreen(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(18.dp)
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null)
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Mark as Completed",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
                     "completed" -> {
-                        Card(
+                        GlassCard(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
+                            shape = RoundedCornerShape(20.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            elevation = 3.dp
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(18.dp),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -182,27 +196,27 @@ fun RequestDetailScreen(
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = "This transaction has been completed",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
                     }
                     "rejected" -> {
-                        Card(
+                        GlassCard(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            )
+                            shape = RoundedCornerShape(20.dp),
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                            elevation = 3.dp
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(18.dp),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -211,12 +225,12 @@ fun RequestDetailScreen(
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.error
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = "This request was rejected",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
@@ -229,35 +243,35 @@ fun RequestDetailScreen(
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
     }
 }
 
 @Composable
-private fun DetailInfoCard(label: String, value: String) {
-    Card(
+private fun DetailGlassInfoCard(label: String, value: String) {
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        shape = RoundedCornerShape(18.dp),
+        elevation = 2.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

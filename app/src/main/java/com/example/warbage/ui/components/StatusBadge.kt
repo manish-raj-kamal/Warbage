@@ -1,16 +1,20 @@
 package com.example.warbage.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.warbage.ui.theme.*
+import com.example.warbage.ui.glass.liquidGlass
+import com.example.warbage.ui.theme.StatusAccepted
+import com.example.warbage.ui.theme.StatusCompleted
+import com.example.warbage.ui.theme.StatusPending
+import com.example.warbage.ui.theme.StatusRejected
 
 @Composable
 fun StatusBadge(
@@ -29,15 +33,22 @@ fun StatusBadge(
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(color.copy(alpha = 0.15f))
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .liquidGlass(
+                shape = CircleShape,
+                blurRadius = 12.dp,
+                lensHeight = 8.dp,
+                lensAmount = 10.dp,
+                tint = color.copy(alpha = 0.22f),
+                borderAlpha = 0.5f,
+                elevation = 2.dp
+            )
+            .padding(horizontal = 12.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             color = color
         )
     }

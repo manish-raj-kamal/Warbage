@@ -11,24 +11,33 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.warbage.ai.MaterialClassifier
+import com.example.warbage.ui.glass.GlassButton
+import com.example.warbage.ui.glass.GlassCard
+import com.example.warbage.ui.glass.GlassIconButton
+import com.example.warbage.ui.glass.LiquidTopAppBar
+import com.example.warbage.ui.glass.liquidGlass
 import kotlinx.coroutines.launch
 
 data class AiResult(
@@ -37,7 +46,6 @@ data class AiResult(
     val confidence: Float
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiScannerScreen(
     onMaterialDetected: (materialId: Int) -> Unit,
@@ -51,7 +59,6 @@ fun AiScannerScreen(
     var aiResult by remember { mutableStateOf<AiResult?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
 
-    // Uses the Native Android Camera App interface!
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
@@ -78,7 +85,6 @@ fun AiScannerScreen(
                         @Suppress("DEPRECATION")
                         MediaStore.Images.Media.getBitmap(context.contentResolver, it)
                     }
-                    // Copy to ensure it's a software bitmap which Compose and our AI can safely process
                     val softwareBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false)
                     currentBitmap = softwareBitmap
                     isProcessing = true
@@ -86,7 +92,6 @@ fun AiScannerScreen(
                     val result = classifier.classify(softwareBitmap)
                     aiResult = result
                 } catch (e: Exception) {
-                    // handle error
                 } finally {
                     isProcessing = false
                 }
@@ -95,12 +100,16 @@ fun AiScannerScreen(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
-                title = { Text("AI Scanner", fontWeight = FontWeight.Bold) },
+            LiquidTopAppBar(
+                title = { Text("AI Material Scanner", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    GlassIconButton(
+                        onClick = onBack,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             )
@@ -112,152 +121,238 @@ fun AiScannerScreen(
                 .padding(padding)
         ) {
             if (currentBitmap == null) {
-                // Empty State: Prompt user to open native camera or gallery
+                // Empty Viewfinder State
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(32.dp),
+                        elevation = 8.dp
                     ) {
-                        Icon(
-                            Icons.Default.CameraAlt,
-                            contentDescription = null,
-                            modifier = Modifier.size(72.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                        )
-                        Text(
-                            text = "Scan E-Waste",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Take a photo or choose from your gallery\nto identify electronic waste.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 32.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Button(
-                                onClick = { takePictureLauncher.launch(null) },
-                                modifier = Modifier.height(56.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(90.dp)
+                                    .liquidGlass(
+                                        shape = CircleShape,
+                                        blurRadius = 20.dp,
+                                        lensHeight = 16.dp,
+                                        lensAmount = 18.dp,
+                                        tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.25f),
+                                        borderAlpha = 0.6f,
+                                        elevation = 4.dp
+                                    ),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.CameraAlt, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Open Camera")
+                                Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(46.dp),
+                                    tint = MaterialTheme.colorScheme.tertiary
+                                )
                             }
-                            FilledTonalButton(
-                                onClick = { galleryLauncher.launch("image/*") },
-                                modifier = Modifier.height(56.dp)
+
+                            Text(
+                                text = "Scan E-Waste",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Text(
+                                text = "Capture or upload a photo to instantly classify printed circuit boards, cables, batteries, and appliances.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Icon(Icons.Default.PhotoLibrary, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Gallery")
+                                GlassButton(
+                                    onClick = { takePictureLauncher.launch(null) },
+                                    modifier = Modifier.weight(1f),
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Camera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                }
+
+                                GlassButton(
+                                    onClick = { galleryLauncher.launch("image/*") },
+                                    modifier = Modifier.weight(1f),
+                                    tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Gallery", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                                }
                             }
                         }
                     }
                 }
             } else {
-                // Image Preview State
+                // Image Preview Glass State
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(16.dp),
+                        .padding(20.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        bitmap = currentBitmap!!.asImageBitmap(),
-                        contentDescription = "Captured Image",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentScale = ContentScale.Fit
-                    )
-
-                    if (isProcessing) {
-                        Box(
+                    GlassCard(
+                        modifier = Modifier.fillMaxSize(),
+                        shape = RoundedCornerShape(28.dp),
+                        elevation = 6.dp
+                    ) {
+                        Image(
+                            bitmap = currentBitmap!!.asImageBitmap(),
+                            contentDescription = "Captured Image",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+                                .clip(RoundedCornerShape(28.dp)),
+                            contentScale = ContentScale.Fit
+                        )
+
+                        if (isProcessing) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .liquidGlass(
+                                        shape = RoundedCornerShape(28.dp),
+                                        blurRadius = 16.dp,
+                                        tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        "Analyzing with LiteRT...",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
-                // Result Section
+                // Result Floating Glass Sheet
                 AnimatedVisibility(visible = aiResult != null && !isProcessing) {
                     aiResult?.let { result ->
-                        Card(
+                        GlassCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                            shape = RoundedCornerShape(26.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                            elevation = 6.dp
                         ) {
                             Column(
-                                modifier = Modifier.padding(24.dp),
+                                modifier = Modifier.padding(22.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Detected: ${result.materialName}",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Confidence: ${String.format("%.0f", result.confidence * 100)}%",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = result.materialName,
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .liquidGlass(
+                                                shape = CircleShape,
+                                                blurRadius = 8.dp,
+                                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                                borderAlpha = 0.5f,
+                                                elevation = 1.dp
+                                            )
+                                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = "${String.format("%.0f", result.confidence * 100)}% match",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+
                                 if (result.confidence < 0.6f) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Unable to identify this material confidently. Please select the material manually.",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        text = "Low confidence detection. You may also select your material manually.",
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.error,
                                         textAlign = TextAlign.Center
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Spacer(modifier = Modifier.height(18.dp))
+
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    OutlinedButton(
+                                    GlassButton(
                                         onClick = {
                                             currentBitmap = null
                                             aiResult = null
                                         },
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                        shape = RoundedCornerShape(16.dp)
                                     ) {
-                                        Text("Retake")
+                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Retake", fontWeight = FontWeight.SemiBold)
                                     }
-                                    Button(
+
+                                    GlassButton(
                                         onClick = { onMaterialDetected(result.materialId) },
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1.3f),
+                                        shape = RoundedCornerShape(16.dp)
                                     ) {
-                                        Text("Use This Material")
+                                        Text(
+                                            "Select Material",
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
                                     }
                                 }
                             }

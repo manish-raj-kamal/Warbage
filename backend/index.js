@@ -83,8 +83,13 @@ app.get('/api/users', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
   try {
-    const user = new User(req.body);
-    await user.save();
+    const { userId } = req.body;
+    // Upsert user to avoid duplicates if they login again
+    const user = await User.findOneAndUpdate(
+      { userId: userId },
+      req.body,
+      { new: true, upsert: true }
+    );
     res.status(201).json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });

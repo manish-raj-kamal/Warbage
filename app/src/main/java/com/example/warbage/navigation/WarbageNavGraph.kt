@@ -6,10 +6,14 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.warbage.auth.AuthManager
 import com.example.warbage.data.WarbageDatabase
 import com.example.warbage.ui.screens.*
 
 sealed class Screen(val route: String) {
+    data object Login : Screen("login")
+    data object Signup : Screen("signup")
+    data object Profile : Screen("profile")
     data object RoleSelect : Screen("role_select")
     data object Home : Screen("home")
     data object MaterialList : Screen("materials")
@@ -38,12 +42,78 @@ sealed class Screen(val route: String) {
 @Composable
 fun WarbageNavGraph(
     navController: NavHostController,
-    database: WarbageDatabase
+    database: WarbageDatabase,
+    authManager: AuthManager
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.RoleSelect.route
+        startDestination = Screen.Login.route
     ) {
+        // First Screen: Login
+        composable(Screen.Login.route) {
+            LoginScreen(
+                authManager = authManager,
+                onLoginSuccess = { user ->
+                    val destination = if (user.role.lowercase() == "recycler") {
+                        Screen.RecyclerDashboard.route
+                    } else {
+                        Screen.Home.route
+                    }
+                    navController.navigate(destination) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateToSignup = {
+                    navController.navigate(Screen.Signup.route)
+                }
+            )
+        }
+
+        // Signup Screen
+        composable(Screen.Signup.route) {
+            SignupScreen(
+                authManager = authManager,
+                onSignupSuccess = { user ->
+                    val destination = if (user.role.lowercase() == "recycler") {
+                        Screen.RecyclerDashboard.route
+                    } else {
+                        Screen.Home.route
+                    }
+                    navController.navigate(destination) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Profile Screen
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                database = database,
+                authManager = authManager,
+                onBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onRoleChanged = { role ->
+                    val target = if (role.lowercase() == "recycler") {
+                        Screen.RecyclerDashboard.route
+                    } else {
+                        Screen.Home.route
+                    }
+                    navController.navigate(target) {
+                        popUpTo(Screen.Login.route)
+                    }
+                }
+            )
+        }
+
+        // Quick Role Switch Screen
         composable(Screen.RoleSelect.route) {
             RoleSelectScreen(
                 onCollectorSelected = {
@@ -67,9 +137,10 @@ fun WarbageNavGraph(
                 onTransactionsClick = { navController.navigate(Screen.TransactionList.route) },
                 onAiScannerClick = { navController.navigate(Screen.AiScanner.route) },
                 onSwitchRole = {
-                    navController.navigate(Screen.RoleSelect.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
+                    navController.navigate(Screen.RoleSelect.route)
+                },
+                onProfileClick = {
+                    navController.navigate(Screen.Profile.route)
                 }
             )
         }
@@ -197,9 +268,10 @@ fun WarbageNavGraph(
                     navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 },
                 onSwitchRole = {
-                    navController.navigate(Screen.RoleSelect.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
+                    navController.navigate(Screen.RoleSelect.route)
+                },
+                onProfileClick = {
+                    navController.navigate(Screen.Profile.route)
                 }
             )
         }

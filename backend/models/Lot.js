@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const lotSchema = new mongoose.Schema({
   lotId: { type: String, required: true, unique: true },
-  collectorId: { type: Number },
+  collectorId: { type: String },
   materialId: { type: Number, required: true },
   weight: { type: Number, required: true },
   estimatedMinValue: { type: Number },

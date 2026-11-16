@@ -1,6 +1,8 @@
 package com.example.warbage.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
@@ -8,14 +10,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.warbage.data.WarbageDatabase
 import com.example.warbage.data.entity.LotEntity
 import com.example.warbage.data.repository.LotRepository
+import com.example.warbage.ui.glass.GlassButton
+import com.example.warbage.ui.glass.GlassCard
+import com.example.warbage.ui.glass.GlassIconButton
+import com.example.warbage.ui.glass.LiquidTopAppBar
+import com.example.warbage.ui.glass.liquidGlass
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateLotScreen(
     database: WarbageDatabase,
@@ -35,12 +42,20 @@ fun CreateLotScreen(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            LiquidTopAppBar(
                 title = { Text("Create Lot", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    GlassIconButton(
+                        onClick = onBack,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             )
@@ -58,48 +73,61 @@ fun CreateLotScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Lot preview card
-                Card(
+                // Hero Lot Preview Glass Card
+                GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    shape = RoundedCornerShape(26.dp),
+                    elevation = 6.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .liquidGlass(
+                                    shape = CircleShape,
+                                    blurRadius = 14.dp,
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+                                    borderAlpha = 0.5f,
+                                    elevation = 2.dp
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = lotIdStr,
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "New E-Waste Lot",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                // Details
-                DetailRow("Material", "${mat.icon} ${mat.name}")
-                DetailRow("Weight", "$weight ${mat.unit}")
-                DetailRow("Estimated Value", "₹${String.format("%,.0f", minValue)} – ₹${String.format("%,.0f", maxValue)}")
-                DetailRow("Status", "📦 Created")
+                // Details Glass Rows
+                DetailGlassRow("Material", "${mat.icon} ${mat.name}")
+                DetailGlassRow("Weight", "$weight ${mat.unit}")
+                DetailGlassRow("Estimated Value", "₹${String.format("%,.0f", minValue)} – ₹${String.format("%,.0f", maxValue)}")
+                DetailGlassRow("Status", "📦 Created")
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Button(
+                GlassButton(
                     onClick = {
                         if (!isCreating && lotNumber != null) {
                             isCreating = true
@@ -122,20 +150,16 @@ fun CreateLotScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = !isCreating && lotNumber != null
+                    enabled = !isCreating && lotNumber != null,
+                    isLoading = isCreating,
+                    shape = RoundedCornerShape(18.dp)
                 ) {
-                    if (isCreating) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text(
-                            text = "Confirm & Find Recycler",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = "Confirm & Find Recycler",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -143,17 +167,16 @@ fun CreateLotScreen(
 }
 
 @Composable
-private fun DetailRow(label: String, value: String) {
-    Card(
+private fun DetailGlassRow(label: String, value: String) {
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        shape = RoundedCornerShape(18.dp),
+        elevation = 2.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -165,7 +188,8 @@ private fun DetailRow(label: String, value: String) {
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

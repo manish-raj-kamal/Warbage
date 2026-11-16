@@ -1,6 +1,8 @@
 package com.example.warbage.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -8,13 +10,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.warbage.data.WarbageDatabase
+import com.example.warbage.ui.glass.GlassButton
+import com.example.warbage.ui.glass.GlassCard
+import com.example.warbage.ui.glass.GlassIconButton
+import com.example.warbage.ui.glass.GlassTextField
+import com.example.warbage.ui.glass.LiquidTopAppBar
+import com.example.warbage.ui.glass.liquidGlass
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MaterialDetailScreen(
     database: WarbageDatabase,
@@ -27,12 +35,20 @@ fun MaterialDetailScreen(
     val weight = weightText.toDoubleOrNull()
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            LiquidTopAppBar(
                 title = { Text("Material Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    GlassIconButton(
+                        onClick = onBack,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             )
@@ -46,97 +62,118 @@ fun MaterialDetailScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Material header
-                Card(
+                // Hero Material Glass Card
+                GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                    shape = RoundedCornerShape(28.dp),
+                    elevation = 6.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(26.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = mat.icon,
-                            fontSize = 48.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(76.dp)
+                                .liquidGlass(
+                                    shape = CircleShape,
+                                    blurRadius = 18.dp,
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+                                    borderAlpha = 0.5f,
+                                    elevation = 3.dp
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = mat.icon,
+                                fontSize = 42.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
                             text = mat.name,
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = mat.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-
-                // Current price
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            text = "Current Price",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "₹${mat.minPrice}–₹${mat.maxPrice} / ${mat.unit}",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            text = mat.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                // Weight input
-                OutlinedTextField(
+                // Current Price Glass Card
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    elevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Market Price",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "₹${mat.minPrice}–₹${mat.maxPrice} / ${mat.unit}",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                // Weight Glass Input
+                GlassTextField(
                     value = weightText,
                     onValueChange = { newValue ->
                         if (newValue.isEmpty() || newValue.matches(Regex("^\\d*\\.?\\d*$"))) {
                             weightText = newValue
                         }
                     },
-                    label = { Text("Enter approximate weight") },
-                    suffix = { Text(mat.unit) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    label = "Weight (${mat.unit})",
+                    placeholder = "e.g. 5.5",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
-                // Estimated value
+                // Estimated Value Card
                 if (weight != null && weight > 0) {
                     val minValue = weight * mat.minPrice
                     val maxValue = weight * mat.maxPrice
 
-                    Card(
+                    GlassCard(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                        )
+                        shape = RoundedCornerShape(22.dp),
+                        tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f),
+                        elevation = 4.dp
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             Text(
-                                text = "Estimated Value",
+                                text = "Estimated Payout",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "₹${String.format("%,.0f", minValue)} – ₹${String.format("%,.0f", maxValue)}",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -144,8 +181,8 @@ fun MaterialDetailScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Create Lot button
-                Button(
+                // Create Lot Liquid Glass Button
+                GlassButton(
                     onClick = {
                         if (weight != null && weight > 0) {
                             onCreateLot(mat.id, weight)
@@ -154,12 +191,14 @@ fun MaterialDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = weight != null && weight > 0
+                    enabled = weight != null && weight > 0,
+                    shape = RoundedCornerShape(18.dp)
                 ) {
                     Text(
                         text = "Create Lot",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
