@@ -30,14 +30,14 @@ class MaterialClassifier(context: Context) : AutoCloseable {
 
     init {
         // Load labels
-        context.assets.open("labels.txt").bufferedReader().useLines { lines ->
+        context.assets.open("e_waste_labels.txt").bufferedReader().useLines { lines ->
             labels.addAll(lines)
         }
 
         // Initialize LiteRT CompiledModel
         model = CompiledModel.create(
             context.assets,
-            "warbage_ewaste_model.tflite",
+            "e_waste_classifier.tflite",
             CompiledModel.Options(Accelerator.CPU).apply {
                 cpuOptions = CompiledModel.CpuOptions(
                     numThreads = 4,
@@ -126,19 +126,17 @@ class MaterialClassifier(context: Context) : AutoCloseable {
 
         val labelName = if (maxIdx < labels.size) labels[maxIdx] else "Other"
 
-        // Map the original 18 granular Kaggle classes down to our 5 database categories
+        // Map the new 10 HuggingFace classes to our 5 database categories
         val mappedId = when (labelName) {
-            "PCB", "Microchip-IC", "transistor", "Resistor", "Passive-Component" -> 1 // PCB
-            "Cables" -> 2 // Cables (In case it's added later, not in this dataset)
-            "Battery" -> 3 // Batteries
-            "Laptop", "Television", "Mobile" -> 4 // LCD_Panels
-            else -> 7 // Other (Air-Conditioner, Keyboard, Microwave, Mouse, Printer, Refrigerator, Washing Machine, heat-sink, light bulbs)
+            "PCB" -> 1 
+            "Battery" -> 3 
+            "Mobile", "Television" -> 4 // LCD_Panels
+            else -> 7 // Other (Keyboard, Microwave, Mouse, Player, Printer, Washing Machine)
         }
 
         // Return the user-friendly category name rather than the granular raw label
         val displayName = when (mappedId) {
             1 -> "Printed Circuit Board"
-            2 -> "Cables"
             3 -> "Batteries"
             4 -> "Display Panels"
             else -> "Other E-Waste"
