@@ -83,10 +83,10 @@ class MaterialClassifier(context: Context) : AutoCloseable {
         if (isFloat) {
             val floatInput = FloatArray(inputSize * inputSize * 3)
             pixels.forEachIndexed { i, p ->
-                // MobileNetV2 uses [-1, 1] normalization instead of [0, 255]
-                floatInput[i * 3] = ((p shr 16 and 0xFF) - 127.5f) / 127.5f
-                floatInput[i * 3 + 1] = ((p shr 8 and 0xFF) - 127.5f) / 127.5f
-                floatInput[i * 3 + 2] = ((p and 0xFF) - 127.5f) / 127.5f
+                // Try standard [0, 1] normalization, which is most common for arbitrary HF models.
+                floatInput[i * 3] = (p shr 16 and 0xFF) / 255.0f
+                floatInput[i * 3 + 1] = (p shr 8 and 0xFF) / 255.0f
+                floatInput[i * 3 + 2] = (p and 0xFF) / 255.0f
             }
             inputs[0].writeFloat(floatInput)
         } else {
