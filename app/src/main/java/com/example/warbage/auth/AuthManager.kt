@@ -103,9 +103,11 @@ class AuthManager(
                     role = role.uppercase(),
                     authProvider = "email"
                 )
-                RetrofitClient.api.createUser(backendUser)
+                android.util.Log.d("AuthManager", "Syncing new email user to backend: $backendUser")
+                val response = RetrofitClient.api.createUser(backendUser)
+                android.util.Log.d("AuthManager", "Backend sync successful: $response")
             } catch (e: Exception) {
-                // Ignore API failure for local success, or handle it as needed
+                android.util.Log.e("AuthManager", "Backend sync failed", e)
             }
             
             Result.success(userEntity)
@@ -174,9 +176,11 @@ class AuthManager(
                         role = finalRole.uppercase(),
                         authProvider = "google"
                     )
-                    RetrofitClient.api.createUser(backendUser)
+                    android.util.Log.d("AuthManager", "Syncing google user to backend: $backendUser")
+                    val response = RetrofitClient.api.createUser(backendUser)
+                    android.util.Log.d("AuthManager", "Backend sync successful: $response")
                 } catch (e: Exception) {
-                    // Ignore API failure to not block local auth 
+                    android.util.Log.e("AuthManager", "Backend sync failed", e)
                 }
                 
                 Result.success(userEntity)
