@@ -83,10 +83,10 @@ class MaterialClassifier(context: Context) : AutoCloseable {
         if (isFloat) {
             val floatInput = FloatArray(inputSize * inputSize * 3)
             pixels.forEachIndexed { i, p ->
-                // Try standard [0, 1] normalization, which is most common for arbitrary HF models.
-                floatInput[i * 3] = (p shr 16 and 0xFF) / 255.0f
-                floatInput[i * 3 + 1] = (p shr 8 and 0xFF) / 255.0f
-                floatInput[i * 3 + 2] = (p and 0xFF) / 255.0f
+                // Do NOT normalize! Pass raw 0-255 values, identical to app.py logic
+                floatInput[i * 3] = (p shr 16 and 0xFF).toFloat()
+                floatInput[i * 3 + 1] = (p shr 8 and 0xFF).toFloat()
+                floatInput[i * 3 + 2] = (p and 0xFF).toFloat()
             }
             inputs[0].writeFloat(floatInput)
         } else {
