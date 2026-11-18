@@ -31,7 +31,9 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.maps.android.compose.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun RecyclerMapScreen(
@@ -90,7 +92,10 @@ fun RecyclerMapScreen(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             properties = MapProperties(isMyLocationEnabled = hasLocationPermission),
-            uiSettings = MapUiSettings(zoomControlsEnabled = false)
+            uiSettings = MapUiSettings(
+                zoomControlsEnabled = false,
+                myLocationButtonEnabled = false // Hide the default top right button
+            )
         ) {
             recyclers.forEach { recycler ->
                 val position = LatLng(recycler.latitude, recycler.longitude)
@@ -132,7 +137,7 @@ fun RecyclerMapScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .padding(20.dp),
+                    .padding(horizontal = 20.dp, vertical = 32.dp),
                 shape = RoundedCornerShape(26.dp),
                 elevation = 10.dp
             ) {
@@ -239,6 +244,35 @@ fun RecyclerMapScreen(
                         }
                     }
                 }
+            }
+        }
+        
+        // Custom "Locate Me" Button perfectly placed at Bottom End!
+        if (hasLocationPermission) {
+            val coroutineScope = rememberCoroutineScope()
+            FloatingActionButton(
+                onClick = {
+                    userLocation?.let {
+                        coroutineScope.launch {
+                            cameraPositionState.animate(
+                                CameraUpdateFactory.newLatLngZoom(it, 15f)
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(
+                        end = 20.dp,
+                        bottom = if (selectedRecycler != null) 230.dp else 40.dp
+                    ),
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "My Location",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
         }
     }
