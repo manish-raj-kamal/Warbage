@@ -74,66 +74,93 @@ abstract class WarbageDatabase : RoomDatabase() {
                 listOf(
                     MaterialEntity(
                         id = 1,
-                        name = "PCB",
-                        description = "Printed Circuit Boards from computers, phones, and electronics",
-                        minPrice = 450,
-                        maxPrice = 600,
-                        unit = "kg",
-                        icon = "📟"
-                    ),
-                    MaterialEntity(
-                        id = 2,
-                        name = "Cables",
-                        description = "Copper and aluminum wiring from electronics and appliances",
-                        minPrice = 250,
-                        maxPrice = 350,
-                        unit = "kg",
-                        icon = "🔌"
-                    ),
-                    MaterialEntity(
-                        id = 3,
-                        name = "Batteries",
-                        description = "Li-ion, lead-acid, and NiMH batteries",
+                        name = "Battery",
+                        description = "Li-ion, lead-acid, and general batteries",
                         minPrice = 80,
                         maxPrice = 120,
                         unit = "kg",
                         icon = "🔋"
                     ),
                     MaterialEntity(
+                        id = 2,
+                        name = "Keyboard",
+                        description = "Computer keyboards and input peripherals",
+                        minPrice = 10,
+                        maxPrice = 30,
+                        unit = "kg",
+                        icon = "⌨️"
+                    ),
+                    MaterialEntity(
+                        id = 3,
+                        name = "Microwave",
+                        description = "Microwave ovens and heavy appliances",
+                        minPrice = 40,
+                        maxPrice = 70,
+                        unit = "kg",
+                        icon = "♨️"
+                    ),
+                    MaterialEntity(
                         id = 4,
-                        name = "LCD/LED",
-                        description = "Display panels from monitors, TVs, and laptops",
+                        name = "Mobile",
+                        description = "Smartphones and mobile phones",
+                        minPrice = 200,
+                        maxPrice = 400,
+                        unit = "piece",
+                        icon = "📱"
+                    ),
+                    MaterialEntity(
+                        id = 5,
+                        name = "Mouse",
+                        description = "Computer mice and small peripherals",
+                        minPrice = 5,
+                        maxPrice = 15,
+                        unit = "kg",
+                        icon = "🖱️"
+                    ),
+                    MaterialEntity(
+                        id = 6,
+                        name = "PCB",
+                        description = "Printed Circuit Boards from electronics",
+                        minPrice = 450,
+                        maxPrice = 600,
+                        unit = "kg",
+                        icon = "📟"
+                    ),
+                    MaterialEntity(
+                        id = 7,
+                        name = "Player",
+                        description = "Media players, DVD players, and audio devices",
+                        minPrice = 20,
+                        maxPrice = 50,
+                        unit = "kg",
+                        icon = "▶️"
+                    ),
+                    MaterialEntity(
+                        id = 8,
+                        name = "Printer",
+                        description = "Printers, scanners, and imaging devices",
+                        minPrice = 20,
+                        maxPrice = 50,
+                        unit = "kg",
+                        icon = "🖨️"
+                    ),
+                    MaterialEntity(
+                        id = 9,
+                        name = "Television",
+                        description = "TVs, monitors, and large display panels",
                         minPrice = 60,
                         maxPrice = 100,
                         unit = "kg",
                         icon = "📺"
                     ),
                     MaterialEntity(
-                        id = 5,
-                        name = "Motors",
-                        description = "Electric motors from appliances and machines",
-                        minPrice = 150,
-                        maxPrice = 250,
+                        id = 10,
+                        name = "Washing Machine",
+                        description = "Washing machines and major home appliances",
+                        minPrice = 30,
+                        maxPrice = 60,
                         unit = "kg",
-                        icon = "⚙️"
-                    ),
-                    MaterialEntity(
-                        id = 6,
-                        name = "CRT",
-                        description = "Cathode Ray Tube glass from old TVs and monitors",
-                        minPrice = 20,
-                        maxPrice = 40,
-                        unit = "kg",
-                        icon = "🖥️"
-                    ),
-                    MaterialEntity(
-                        id = 7,
-                        name = "Mixed Plastics",
-                        description = "Mixed plastic casings from electronic devices",
-                        minPrice = 10,
-                        maxPrice = 25,
-                        unit = "kg",
-                        icon = "♻️"
+                        icon = "🧺"
                     )
                 )
             )

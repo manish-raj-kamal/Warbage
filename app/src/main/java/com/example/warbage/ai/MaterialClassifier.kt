@@ -126,24 +126,23 @@ class MaterialClassifier(context: Context) : AutoCloseable {
 
         val labelName = if (maxIdx < labels.size) labels[maxIdx] else "Other"
 
-        // Map the new 10 HuggingFace classes to our 5 database categories
+        // Strictly map the 10 HuggingFace classes directly to the matching Database IDs
         val mappedId = when (labelName) {
-            "PCB" -> 1 
-            "Battery" -> 3 
-            "Mobile", "Television" -> 4 // LCD_Panels
-            else -> 7 // Other (Keyboard, Microwave, Mouse, Player, Printer, Washing Machine)
-        }
-
-        // Return the user-friendly category name rather than the granular raw label
-        val displayName = when (mappedId) {
-            1 -> "Printed Circuit Board"
-            3 -> "Batteries"
-            4 -> "Display Panels"
-            else -> "Other E-Waste"
+            "Battery" -> 1
+            "Keyboard" -> 2
+            "Microwave" -> 3
+            "Mobile" -> 4
+            "Mouse" -> 5
+            "PCB" -> 6
+            "Player" -> 7
+            "Printer" -> 8
+            "Television" -> 9
+            "Washing Machine" -> 10
+            else -> 1 // Default fallback
         }
 
         AiResult(
-            materialName = displayName,
+            materialName = labelName,
             materialId = mappedId,
             confidence = maxProb
         )
