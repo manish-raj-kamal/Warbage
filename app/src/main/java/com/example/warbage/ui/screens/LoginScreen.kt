@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.warbage.auth.AuthManager
+import com.example.warbage.auth.EmailNotVerifiedException
 import com.example.warbage.data.entity.UserEntity
 import com.example.warbage.ui.glass.GlassButton
 import com.example.warbage.ui.glass.GlassCard
@@ -69,6 +71,9 @@ fun LoginScreen(
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var forgotPasswordEmail by remember { mutableStateOf("") }
     var isSendingResetEmail by remember { mutableStateOf(false) }
+
+    var showEmailNotVerifiedDialog by remember { mutableStateOf(false) }
+    var unverifiedEmailAddress by remember { mutableStateOf("") }
 
     // Google Sign-In Recycler Complete Details Dialog
     var showGoogleRecyclerDialog by remember { mutableStateOf(false) }
@@ -303,7 +308,12 @@ fun LoginScreen(
                                     result.onSuccess { user ->
                                         onLoginSuccess(user)
                                     }.onFailure { error ->
-                                        errorMessage = error.localizedMessage ?: "Sign in failed. Check credentials."
+                                        if (error is EmailNotVerifiedException) {
+                                            unverifiedEmailAddress = error.email
+                                            showEmailNotVerifiedDialog = true
+                                        } else {
+                                            errorMessage = error.localizedMessage ?: "Sign in failed. Check credentials."
+                                        }
                                     }
                                 }
                             }
@@ -652,6 +662,60 @@ fun LoginScreen(
             }
         )
     }
+
+    // Email Not Verified Alert Dialog
+    if (showEmailNotVerifiedDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmailNotVerifiedDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.MarkEmailUnread,
+                    contentDescription = null,
+                    tint = CyanBright,
+                    modifier = Modifier.size(36.dp)
+                )
+            },
+            title = {
+                Text("Verify Your Email First", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "We sent a verification link to:\n$unverifiedEmailAddress",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Please check your inbox (or spam folder) and click the link to verify your account. You cannot log in until your email is verified.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val res = authManager.resendVerificationEmail(unverifiedEmailAddress, password)
+                            res.onSuccess {
+                                Toast.makeText(context, "Verification email resent! Please check your inbox.", Toast.LENGTH_SHORT).show()
+                            }.onFailure { e ->
+                                Toast.makeText(context, "Failed to resend: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                ) {
+                    Text("Resend Verification Email", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEmailNotVerifiedDialog = false }) {
+                    Text("Dismiss")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -677,54 +741,13 @@ private fun TrustBadge(text: String) {
 }
 
 /**
- * Authentic multi-color Google "G" logo drawn via Canvas
+ * Official 4-color Google "G" logo
  */
 @Composable
 fun GoogleLogoIcon(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val size = this.size.minDimension
-        val strokeWidth = size * 0.22f
-        val radius = (size - strokeWidth) / 2f
-        val center = Offset(size / 2f, size / 2f)
-
-        // Blue arc
-        drawArc(
-            color = Color(0xFF4285F4),
-            startAngle = -45f,
-            sweepAngle = 90f,
-            useCenter = false,
-            style = Stroke(width = strokeWidth)
-        )
-        // Green arc
-        drawArc(
-            color = Color(0xFF34A853),
-            startAngle = 45f,
-            sweepAngle = 90f,
-            useCenter = false,
-            style = Stroke(width = strokeWidth)
-        )
-        // Yellow arc
-        drawArc(
-            color = Color(0xFFFBBC05),
-            startAngle = 135f,
-            sweepAngle = 90f,
-            useCenter = false,
-            style = Stroke(width = strokeWidth)
-        )
-        // Red arc
-        drawArc(
-            color = Color(0xFFEA4335),
-            startAngle = 225f,
-            sweepAngle = 90f,
-            useCenter = false,
-            style = Stroke(width = strokeWidth)
-        )
-        // Blue horizontal crossbar
-        drawLine(
-            color = Color(0xFF4285F4),
-            start = Offset(center.x, center.y),
-            end = Offset(center.x + radius, center.y),
-            strokeWidth = strokeWidth
-        )
-    }
+    androidx.compose.foundation.Image(
+        painter = androidx.compose.ui.res.painterResource(id = com.example.warbage.R.drawable.ic_google_logo),
+        contentDescription = "Google Logo",
+        modifier = modifier
+    )
 }

@@ -20,6 +20,11 @@ import java.util.UUID
 import com.example.warbage.network.RetrofitClient
 import com.example.warbage.network.BackendUser
 
+class EmailNotVerifiedException(
+    val email: String,
+    message: String = "Please verify your email address before logging in."
+) : Exception(message)
+
 class AuthManager(
     private val userRepository: UserRepository,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -35,6 +40,7 @@ class AuthManager(
 
     /**
      * Sign in with Email and Password using Firebase Auth, then cache user in Room DB.
+     * Enforces that the user's email must be verified before allowing access.
      */
     suspend fun loginWithEmail(email: String, password: String): Result<UserEntity> {
         return try {
@@ -52,6 +58,20 @@ class AuthManager(
             }
 
             val firebaseUser = authResult.user ?: throw Exception("User authentication failed.")
+
+            // Refresh user state from Firebase to get latest verification status
+            try {
+                firebaseUser.reload().await()
+            } catch (_: Exception) {}
+
+            // Require email verification
+            if (!firebaseUser.isEmailVerified) {
+                userRepository.clearUser()
+                throw EmailNotVerifiedException(
+                    email = firebaseUser.email ?: trimmedEmail,
+                    message = "Please verify your email address before logging in. We've sent a verification link to ${firebaseUser.email ?: trimmedEmail}."
+                )
+            }
 
             // Check if user already exists in local DB to retain role
             val existing = userRepository.getUserSync(firebaseUser.uid) ?: existingByEmail
@@ -75,7 +95,8 @@ class AuthManager(
     }
 
     /**
-     * Create user with Email and Password using Firebase Auth, set display name, and store in Room DB.
+     * Create user with Email and Password using Firebase Auth, set display name, and send verification email.
+     * Does NOT save user in local DB yet; the user must verify their email first.
      */
     suspend fun signupWithEmail(
         email: String,
@@ -118,7 +139,11 @@ class AuthManager(
                 firebaseUser.updateProfile(profileUpdates).await()
             } catch (_: Exception) {}
 
-            val userEntity = UserEntity(
+            // Send Verification Email
+            firebaseUser.sendEmailVerification().await()
+
+            // Do not save to local DB or backend yet; user is unverified
+            val pendingUser = UserEntity(
                 uid = firebaseUser.uid,
                 email = firebaseUser.email ?: trimmedEmail,
                 displayName = displayName,
@@ -128,26 +153,72 @@ class AuthManager(
                 authProvider = "email"
             )
 
+            Result.success(pendingUser)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Check if the currently authenticated Firebase user has verified their email.
+     * If verified, save user to local Room DB, sync to backend MongoDB, and activate session.
+     */
+    suspend fun verifyEmailAndActivate(displayName: String, role: String): Result<UserEntity> {
+        return try {
+            val fbUser = auth.currentUser ?: throw Exception("No active session found. Please sign in.")
+            fbUser.reload().await()
+            if (!fbUser.isEmailVerified) {
+                return Result.failure(Exception("Your email has not been verified yet. Please click the verification link in your email and tap this button again."))
+            }
+
+            val userEntity = UserEntity(
+                uid = fbUser.uid,
+                email = fbUser.email ?: "",
+                displayName = if (displayName.isNotBlank()) displayName else (fbUser.displayName ?: fbUser.email?.substringBefore("@") ?: "User"),
+                role = role,
+                phoneNumber = fbUser.phoneNumber ?: "",
+                photoUrl = fbUser.photoUrl?.toString() ?: "",
+                authProvider = "email"
+            )
+
             userRepository.saveUser(userEntity)
-            
-            // Sync to MongoDB Vercel Backend
+
+            // Sync user to MongoDB Vercel Backend
             try {
                 val backendUser = BackendUser(
-                    userId = firebaseUser.uid,
-                    name = displayName,
-                    email = firebaseUser.email ?: trimmedEmail,
-                    phone = "",
+                    userId = fbUser.uid,
+                    name = userEntity.displayName,
+                    email = userEntity.email,
+                    phone = userEntity.phoneNumber,
                     role = role.uppercase(),
                     authProvider = "email"
                 )
-                android.util.Log.d("AuthManager", "Syncing new email user to backend: $backendUser")
-                val response = RetrofitClient.api.createUser(backendUser)
-                android.util.Log.d("AuthManager", "Backend sync successful: $response")
+                RetrofitClient.api.createUser(backendUser)
             } catch (e: Exception) {
-                android.util.Log.e("AuthManager", "Backend sync failed", e)
+                android.util.Log.e("AuthManager", "Backend sync error during email verification", e)
             }
-            
+
             Result.success(userEntity)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Resend verification email to the current logged-in Firebase user, or by signing in temporarily.
+     */
+    suspend fun resendVerificationEmail(email: String = "", password: String = ""): Result<Unit> {
+        return try {
+            var fbUser = auth.currentUser
+            if (fbUser == null && email.isNotBlank() && password.isNotBlank()) {
+                val authResult = auth.signInWithEmailAndPassword(email.trim(), password).await()
+                fbUser = authResult.user
+            }
+            if (fbUser == null) {
+                throw Exception("Unable to resend email. Please try signing in again.")
+            }
+            fbUser.sendEmailVerification().await()
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -167,15 +238,17 @@ class AuthManager(
             } else {
                 try {
                     val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
-                    if (resId != 0) context.getString(resId) else ""
-                } catch (_: Exception) { "" }
+                    if (resId != 0) context.getString(resId) else "28003673307-gno54bgcafonddlgfot5s4kns15of4gk.apps.googleusercontent.com"
+                } catch (_: Exception) {
+                    "28003673307-gno54bgcafonddlgfot5s4kns15of4gk.apps.googleusercontent.com"
+                }
             }
 
-            if (resolvedWebClientId.isBlank() || resolvedWebClientId.contains("placeholder")) {
-                return Result.failure(Exception("Google Sign-In is not configured yet. Download your real google-services.json from Firebase Console."))
-            }
+            val activity = generateSequence(context) {
+                (it as? android.content.ContextWrapper)?.baseContext
+            }.filterIsInstance<android.app.Activity>().firstOrNull() ?: context
 
-            val credentialManager = CredentialManager.create(context)
+            val credentialManager = CredentialManager.create(activity)
 
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setFilterByAuthorizedAccounts(false)
@@ -188,7 +261,7 @@ class AuthManager(
                 .build()
 
             val result = credentialManager.getCredential(
-                context = context,
+                context = activity,
                 request = request
             )
 

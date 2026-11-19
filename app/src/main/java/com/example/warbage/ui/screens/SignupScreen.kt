@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Factory
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -45,6 +46,7 @@ import com.example.warbage.ui.glass.GlassCard
 import com.example.warbage.ui.glass.GlassTextField
 import com.example.warbage.ui.glass.LiquidSegmentedTabs
 import com.example.warbage.ui.glass.liquidGlass
+import com.example.warbage.ui.theme.CyanBright
 import com.example.warbage.ui.theme.EmeraldBright
 import kotlinx.coroutines.launch
 
@@ -81,6 +83,179 @@ fun SignupScreen(
     var showGoogleRecyclerDialog by remember { mutableStateOf(false) }
     var pendingGoogleUser by remember { mutableStateOf<UserEntity?>(null) }
 
+    // Email Verification Flow State
+    var isEmailVerificationSent by remember { mutableStateOf(false) }
+    var verificationEmailAddress by remember { mutableStateOf("") }
+    var pendingRegisteredDisplayName by remember { mutableStateOf("") }
+    var isCheckingVerification by remember { mutableStateOf(false) }
+    var verificationError by remember { mutableStateOf<String?>(null) }
+
+    if (isEmailVerificationSent) {
+        // Dedicated Email Verification Required Screen
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            GlassCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(76.dp)
+                            .liquidGlass(
+                                shape = CircleShape,
+                                blurRadius = 20.dp,
+                                tint = CyanBright.copy(alpha = 0.25f),
+                                borderAlpha = 0.6f
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MarkEmailUnread,
+                            contentDescription = "Verify Email",
+                            modifier = Modifier.size(40.dp),
+                            tint = CyanBright
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Verify Your Email",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "We have sent a verification link to:\n$verificationEmailAddress",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Please check your inbox (and spam folder), open the email from Warbage, and click the link to activate your account.\n\nUntil you verify, access to the app will be restricted.",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    if (verificationError != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = verificationError!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    GlassButton(
+                        onClick = {
+                            isCheckingVerification = true
+                            verificationError = null
+                            scope.launch {
+                                val result = authManager.verifyEmailAndActivate(
+                                    displayName = pendingRegisteredDisplayName,
+                                    role = selectedRole
+                                )
+                                isCheckingVerification = false
+                                result.onSuccess { user ->
+                                    if (selectedRole == "recycler") {
+                                        database.recyclerDao().insertRecycler(
+                                            RecyclerEntity(
+                                                name = companyName.trim().ifEmpty { name.trim() },
+                                                location = facilityLocation.trim().ifEmpty { "Local Area" },
+                                                latitude = 20.5937,
+                                                longitude = 78.9629,
+                                                materials = acceptedMaterials.trim().ifEmpty { "PCB,Batteries,Mobile,Cables" },
+                                                pricePerKg = 500,
+                                                authorized = true
+                                            )
+                                        )
+                                    }
+                                    Toast.makeText(context, "Email verified successfully! Welcome to Warbage.", Toast.LENGTH_SHORT).show()
+                                    onSignupSuccess(user)
+                                }.onFailure { error ->
+                                    verificationError = error.localizedMessage ?: "Email not verified yet. Please click the link in your email first."
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        enabled = !isCheckingVerification,
+                        isLoading = isCheckingVerification,
+                        tint = EmeraldBright.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Text(
+                            text = "I've Verified My Email",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    GlassButton(
+                        onClick = {
+                            scope.launch {
+                                val res = authManager.resendVerificationEmail()
+                                res.onSuccess {
+                                    Toast.makeText(context, "Verification email resent! Check your inbox.", Toast.LENGTH_SHORT).show()
+                                }.onFailure { e ->
+                                    Toast.makeText(context, "Failed to resend: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = "Resend Verification Email",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = {
+                            isEmailVerificationSent = false
+                            scope.launch { authManager.logout() }
+                        }
+                    ) {
+                        Text("Back / Change Email", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+        }
+    } else {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -388,22 +563,11 @@ fun SignupScreen(
                                     role = selectedRole
                                 )
                                 isLoading = false
-                                result.onSuccess { user ->
-                                    if (selectedRole == "recycler") {
-                                        // Create real Recycler entry in database
-                                        database.recyclerDao().insertRecycler(
-                                            RecyclerEntity(
-                                                name = companyName.trim().ifEmpty { name.trim() },
-                                                location = facilityLocation.trim().ifEmpty { "Local Area" },
-                                                latitude = 20.5937,
-                                                longitude = 78.9629,
-                                                materials = acceptedMaterials.trim().ifEmpty { "PCB,Batteries,Mobile,Cables" },
-                                                pricePerKg = 500,
-                                                authorized = true
-                                            )
-                                        )
-                                    }
-                                    onSignupSuccess(user)
+                                result.onSuccess { _ ->
+                                    isEmailVerificationSent = true
+                                    verificationEmailAddress = email.trim()
+                                    pendingRegisteredDisplayName = if (selectedRole == "recycler") companyName.trim().ifEmpty { name.trim() } else name.trim()
+                                    Toast.makeText(context, "Verification email sent! Please check your inbox.", Toast.LENGTH_LONG).show()
                                 }.onFailure { error ->
                                     errorMessage = error.localizedMessage ?: "Registration failed."
                                 }
@@ -515,6 +679,7 @@ fun SignupScreen(
                 )
             }
         }
+    }
     }
 
     // Google Sign-In Recycler Facility Info Modal
