@@ -11,5 +11,10 @@ data class RequestEntity(
     val lotId: Int,
     val recyclerId: Int,
     val dateCreated: Long,
-    val status: String
+    val status: String,
+    val collectorName: String = "",
+    val collectorPhone: String = "",
+    val recyclerName: String = "",
+    val recyclerLocation: String = "",
+    val pricePerKg: Double = 0.0
 )

@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
         UserEntity::class,
         UpgradeRequestEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 abstract class WarbageDatabase : RoomDatabase() {

@@ -14,5 +14,14 @@ data class LotEntity(
     val estimatedMaxValue: Double,
     val description: String,
     val dateCreated: Long,
-    val status: String
+    val status: String,
+    // Collector details
+    val collectorName: String = "",
+    val collectorEmail: String = "",
+    val collectorPhone: String = "",
+    // Recycler details
+    val recyclerId: String = "",
+    val recyclerName: String = "",
+    val recyclerLocation: String = "",
+    val recyclerPricePerKg: Double = 0.0
 )

@@ -52,6 +52,13 @@ class SyncWorker(
                     val backendLot = BackendLot(
                         lotId = lot.lotId,
                         collectorId = lot.userId,
+                        collectorName = lot.collectorName,
+                        collectorEmail = lot.collectorEmail,
+                        collectorPhone = lot.collectorPhone,
+                        recyclerId = lot.recyclerId,
+                        recyclerName = lot.recyclerName,
+                        recyclerLocation = lot.recyclerLocation,
+                        recyclerPricePerKg = lot.recyclerPricePerKg,
                         materialId = lot.materialId,
                         weight = lot.weight,
                         estimatedMinValue = lot.estimatedMinValue,
@@ -76,7 +83,12 @@ class SyncWorker(
                         requestId = req.requestId,
                         lotId = req.lotId.toString(),
                         collectorId = req.userId,
+                        collectorName = req.collectorName,
+                        collectorPhone = req.collectorPhone,
                         recyclerId = req.recyclerId.toString(),
+                        recyclerName = req.recyclerName,
+                        recyclerLocation = req.recyclerLocation,
+                        pricePerKg = req.pricePerKg,
                         status = req.status.uppercase()
                     )
                     RetrofitClient.api.createRequest(backendReq)

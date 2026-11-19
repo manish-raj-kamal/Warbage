@@ -29,6 +29,13 @@ class LotRepository(private val lotDao: LotDao) {
             val backendLot = BackendLot(
                 lotId = lot.lotId,
                 collectorId = lot.userId,
+                collectorName = lot.collectorName,
+                collectorEmail = lot.collectorEmail,
+                collectorPhone = lot.collectorPhone,
+                recyclerId = lot.recyclerId,
+                recyclerName = lot.recyclerName,
+                recyclerLocation = lot.recyclerLocation,
+                recyclerPricePerKg = lot.recyclerPricePerKg,
                 materialId = lot.materialId,
                 weight = lot.weight,
                 estimatedMinValue = lot.estimatedMinValue,
@@ -37,9 +44,28 @@ class LotRepository(private val lotDao: LotDao) {
                 status = lot.status.uppercase()
             )
             RetrofitClient.api.createLot(backendLot)
-            Log.d("LotRepository", "Successfully synced lot ${lot.lotId} to backend")
+            Log.d("LotRepository", "Successfully synced lot ${lot.lotId} with collector & recycler data to backend")
         } catch (e: Exception) {
             Log.e("LotRepository", "Failed to sync lot ${lot.lotId} to backend", e)
+        }
+    }
+
+    suspend fun updateRecycler(
+        id: Int,
+        recyclerId: String,
+        recyclerName: String,
+        recyclerLocation: String,
+        pricePerKg: Double,
+        status: String
+    ) {
+        lotDao.updateRecycler(id, recyclerId, recyclerName, recyclerLocation, pricePerKg, status)
+        try {
+            val updated = lotDao.getLotByIdOnce(id)
+            if (updated != null) {
+                syncLotToBackend(updated)
+            }
+        } catch (e: Exception) {
+            Log.e("LotRepository", "Failed to sync updated recycler on lot", e)
         }
     }
 

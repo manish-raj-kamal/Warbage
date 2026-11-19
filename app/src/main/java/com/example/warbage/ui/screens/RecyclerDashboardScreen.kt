@@ -447,6 +447,43 @@ private fun RequestGlassCard(
                 }
             }
 
+            // Collector Information visible to Recycler
+            val collectorName = lot?.collectorName?.ifEmpty { request.collectorName }?.ifEmpty { "Eco Collector" } ?: "Eco Collector"
+            val collectorContact = lot?.collectorPhone?.ifEmpty { lot.collectorEmail }?.ifEmpty { request.collectorPhone } ?: ""
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle,
+                        contentDescription = "Collector",
+                        tint = EmeraldBright,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Collector: $collectorName",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                if (collectorContact.isNotEmpty()) {
+                    Text(
+                        text = collectorContact,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(

@@ -166,10 +166,22 @@ fun CreateRequestScreen(
                                     lotId = lotId,
                                     recyclerId = recyclerId,
                                     dateCreated = System.currentTimeMillis(),
-                                    status = "pending"
+                                    status = "pending",
+                                    collectorName = currentUser?.displayName ?: "Eco Collector",
+                                    collectorPhone = currentUser?.phoneNumber ?: "",
+                                    recyclerName = currentRecycler.name,
+                                    recyclerLocation = currentRecycler.location,
+                                    pricePerKg = currentRecycler.pricePerKg.toDouble()
                                 )
                                 requestRepository.insert(request)
-                                lotRepository.updateStatus(lotId, "submitted")
+                                lotRepository.updateRecycler(
+                                    id = lotId,
+                                    recyclerId = recyclerId.toString(),
+                                    recyclerName = currentRecycler.name,
+                                    recyclerLocation = currentRecycler.location,
+                                    pricePerKg = currentRecycler.pricePerKg.toDouble(),
+                                    status = "submitted"
+                                )
                                 onRequestCreated()
                             }
                         }

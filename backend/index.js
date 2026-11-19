@@ -477,9 +477,19 @@ app.post('/api/lots', requireAuth, async (req, res) => {
     if (!lotId) {
       return res.status(400).json({ error: 'lotId is required.' });
     }
+
+    const collector = await User.findOne({ userId: req.user.uid });
+
     const lotData = {
       ...req.body,
-      collectorId: req.user.uid, // Force ownership to authenticated user
+      collectorId: req.user.uid,
+      collectorName: req.body.collectorName || collector?.name || req.user.name || '',
+      collectorEmail: req.body.collectorEmail || collector?.email || req.user.email || '',
+      collectorPhone: req.body.collectorPhone || collector?.phone || '',
+      recyclerId: req.body.recyclerId ? String(req.body.recyclerId) : '',
+      recyclerName: req.body.recyclerName || '',
+      recyclerLocation: req.body.recyclerLocation || '',
+      recyclerPricePerKg: req.body.recyclerPricePerKg != null ? Number(req.body.recyclerPricePerKg) : 0,
       status: (req.body.status || 'OPEN').toUpperCase()
     };
     const lot = await Lot.findOneAndUpdate(
@@ -537,16 +547,22 @@ app.get('/api/requests', requireAuth, async (req, res) => {
 
 app.post('/api/requests', requireAuth, async (req, res) => {
   try {
-    const { requestId, lotId, recyclerId } = req.body;
+    const { requestId, lotId, recyclerId, recyclerName, recyclerLocation, collectorName, collectorPhone, pricePerKg } = req.body;
     if (!requestId || !lotId || !recyclerId) {
       return res.status(400).json({ error: 'requestId, lotId, and recyclerId are required.' });
     }
+
+    const collector = await User.findOne({ userId: req.user.uid });
 
     const requestData = {
       requestId,
       lotId,
       collectorId: req.user.uid, // Authenticated collector is the creator
+      collectorName: collectorName || collector?.name || req.user.name || '',
+      collectorPhone: collectorPhone || collector?.phone || '',
       recyclerId: String(recyclerId),
+      recyclerName: recyclerName || '',
+      recyclerLocation: recyclerLocation || '',
       status: (req.body.status || 'PENDING').toUpperCase(),
       updatedAt: Date.now()
     };
@@ -556,6 +572,20 @@ app.post('/api/requests', requireAuth, async (req, res) => {
       { $set: requestData },
       { new: true, upsert: true, runValidators: true }
     ).select('-__v');
+
+    // Also update the linked Lot so the lot itself holds both collector and recycler data!
+    const lotUpdate = {
+      recyclerId: String(recyclerId),
+      status: 'SUBMITTED'
+    };
+    if (recyclerName) lotUpdate.recyclerName = recyclerName;
+    if (recyclerLocation) lotUpdate.recyclerLocation = recyclerLocation;
+    if (pricePerKg != null) lotUpdate.recyclerPricePerKg = Number(pricePerKg);
+    if (collector?.name) lotUpdate.collectorName = collector.name;
+    if (collector?.email) lotUpdate.collectorEmail = collector.email;
+    if (collector?.phone) lotUpdate.collectorPhone = collector.phone;
+
+    await Lot.findOneAndUpdate({ lotId }, { $set: lotUpdate });
 
     res.status(201).json(request);
   } catch (error) {

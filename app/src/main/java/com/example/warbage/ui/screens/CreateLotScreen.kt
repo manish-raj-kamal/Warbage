@@ -1,13 +1,19 @@
 package com.example.warbage.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Factory
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.warbage.data.WarbageDatabase
 import com.example.warbage.data.entity.LotEntity
+import com.example.warbage.data.entity.RecyclerEntity
 import com.example.warbage.data.repository.LotRepository
 import com.example.warbage.ui.components.StatusBadge
 import com.example.warbage.ui.glass.GlassButton
@@ -39,13 +46,22 @@ fun CreateLotScreen(
 ) {
     val material by database.materialDao().getMaterialById(materialId).collectAsState(initial = null)
     val currentUser by database.userDao().getLastActiveUser().collectAsState(initial = null)
+    val recyclers by database.recyclerDao().getAllRecyclers().collectAsState(initial = emptyList())
     val lotRepository = remember { LotRepository(database.lotDao()) }
     val scope = rememberCoroutineScope()
     var isCreating by remember { mutableStateOf(false) }
     var lotNumber by remember { mutableStateOf<Int?>(null) }
+    var selectedRecycler by remember { mutableStateOf<RecyclerEntity?>(null) }
+    var recyclerDropdownExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         lotNumber = lotRepository.getNextLotNumber()
+    }
+
+    LaunchedEffect(recyclers) {
+        if (selectedRecycler == null && recyclers.isNotEmpty()) {
+            selectedRecycler = recyclers.first()
+        }
     }
 
     Scaffold(
@@ -72,13 +88,14 @@ fun CreateLotScreen(
             val minValue = weight * mat.minPrice
             val maxValue = weight * mat.maxPrice
             val lotIdStr = lotNumber?.let { "LOT-${String.format("%04d", it)}" } ?: "..."
+            val collectorDisplayName = currentUser?.displayName?.ifEmpty { "Eco Collector" } ?: "Eco Collector"
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
                     .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Hero Lot Preview Glass Card
                 GlassCard(
@@ -89,12 +106,12 @@ fun CreateLotScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(72.dp)
+                                .size(64.dp)
                                 .liquidGlass(
                                     shape = CircleShape,
                                     blurRadius = 16.dp,
@@ -107,11 +124,11 @@ fun CreateLotScreen(
                             Icon(
                                 imageVector = Icons.Default.Inventory2,
                                 contentDescription = null,
-                                modifier = Modifier.size(36.dp),
+                                modifier = Modifier.size(32.dp),
                                 tint = EmeraldBright
                             )
                         }
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = lotIdStr,
                             style = MaterialTheme.typography.headlineMedium,
@@ -127,16 +144,20 @@ fun CreateLotScreen(
                     }
                 }
 
-                // Details Glass Rows
+                // Batch Parameters
                 DetailGlassRow("Target Material", "${mat.icon} ${mat.name}")
                 DetailGlassRow("Total Weight", "$weight ${mat.unit}")
                 DetailGlassRow("Estimated Value Range", "₹${String.format("%,.0f", minValue)} – ₹${String.format("%,.0f", maxValue)}")
 
-                // Status Row with modern status badge
+                // Collector Information Row
+                DetailGlassRow("Collector", collectorDisplayName)
+
+                // Certified Recycler Selection Card
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    elevation = 2.dp
+                    elevation = 2.dp,
+                    onClick = { if (recyclers.size > 1) recyclerDropdownExpanded = true }
                 ) {
                     Row(
                         modifier = Modifier
@@ -145,12 +166,71 @@ fun CreateLotScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Batch Status",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        StatusBadge(status = "created")
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Assigned Recycler Facility",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = selectedRecycler?.name ?: "Certified Recycler",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Verified,
+                                    contentDescription = "Verified",
+                                    tint = EmeraldBright,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            selectedRecycler?.let { rec ->
+                                Text(
+                                    text = "${rec.location} • ₹${rec.pricePerKg}/kg",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CyanBright
+                                )
+                            }
+                            if (recyclers.size > 1) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Select Recycler",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = recyclerDropdownExpanded,
+                        onDismissRequest = { recyclerDropdownExpanded = false }
+                    ) {
+                        recyclers.forEach { rec ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(rec.name, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            "${rec.location} • ₹${rec.pricePerKg}/kg",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    selectedRecycler = rec
+                                    recyclerDropdownExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
 
@@ -170,7 +250,14 @@ fun CreateLotScreen(
                                     estimatedMaxValue = maxValue,
                                     description = "",
                                     dateCreated = System.currentTimeMillis(),
-                                    status = "created"
+                                    status = "created",
+                                    collectorName = collectorDisplayName,
+                                    collectorEmail = currentUser?.email ?: "",
+                                    collectorPhone = currentUser?.phoneNumber ?: "",
+                                    recyclerId = selectedRecycler?.id?.toString() ?: "",
+                                    recyclerName = selectedRecycler?.name ?: "",
+                                    recyclerLocation = selectedRecycler?.location ?: "",
+                                    recyclerPricePerKg = selectedRecycler?.pricePerKg?.toDouble() ?: 0.0
                                 )
                                 val id = lotRepository.insert(lot)
                                 onLotCreated(id.toInt())
@@ -186,7 +273,7 @@ fun CreateLotScreen(
                     shape = RoundedCornerShape(18.dp)
                 ) {
                     Text(
-                        text = "Confirm & Select Recycler",
+                        text = "Confirm & Proceed",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface

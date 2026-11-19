@@ -138,8 +138,19 @@ fun RequestDetailScreen(
                     )
                 }
 
-                if (recycler != null) {
-                    DetailGlassInfoCard("Processing Facility", "${recycler.name} • ${recycler.location}")
+                val collectorName = lot?.collectorName?.ifEmpty { req.collectorName }?.ifEmpty { "Eco Collector" } ?: "Eco Collector"
+                val collectorContact = lot?.collectorPhone?.ifEmpty { lot?.collectorEmail }?.ifEmpty { req.collectorPhone } ?: ""
+                val facilityName = lot?.recyclerName?.ifEmpty { recycler?.name } ?: "Certified Recycler"
+                val facilityLocation = lot?.recyclerLocation?.ifEmpty { recycler?.location } ?: "Facility"
+                val facilityRate = if ((lot?.recyclerPricePerKg ?: 0.0) > 0) lot?.recyclerPricePerKg?.toInt() else recycler?.pricePerKg ?: 0
+
+                DetailGlassInfoCard("Collector Name", collectorName)
+                if (collectorContact.isNotEmpty()) {
+                    DetailGlassInfoCard("Collector Contact", collectorContact)
+                }
+                DetailGlassInfoCard("Processing Facility", "$facilityName • $facilityLocation")
+                if (facilityRate != null && facilityRate > 0) {
+                    DetailGlassInfoCard("Agreed Recycler Rate", "₹$facilityRate/kg")
                 }
 
                 Spacer(modifier = Modifier.weight(1f))

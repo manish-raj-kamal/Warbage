@@ -30,7 +30,12 @@ class RequestRepository(private val requestDao: RequestDao) {
                 requestId = request.requestId,
                 lotId = request.lotId.toString(),
                 collectorId = request.userId,
+                collectorName = request.collectorName,
+                collectorPhone = request.collectorPhone,
                 recyclerId = request.recyclerId.toString(),
+                recyclerName = request.recyclerName,
+                recyclerLocation = request.recyclerLocation,
+                pricePerKg = request.pricePerKg,
                 status = request.status.uppercase()
             )
             RetrofitClient.api.createRequest(backendReq)

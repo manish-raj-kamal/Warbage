@@ -22,6 +22,13 @@ data class BackendUser(
 data class BackendLot(
     val lotId: String,
     val collectorId: String,
+    val collectorName: String? = null,
+    val collectorEmail: String? = null,
+    val collectorPhone: String? = null,
+    val recyclerId: String? = null,
+    val recyclerName: String? = null,
+    val recyclerLocation: String? = null,
+    val recyclerPricePerKg: Double? = null,
     val materialId: Int,
     val weight: Double,
     val estimatedMinValue: Double,
@@ -35,7 +42,12 @@ data class BackendRequest(
     val requestId: String,
     val lotId: String,
     val collectorId: String? = null,
+    val collectorName: String? = null,
+    val collectorPhone: String? = null,
     val recyclerId: String,
+    val recyclerName: String? = null,
+    val recyclerLocation: String? = null,
+    val pricePerKg: Double? = null,
     val status: String,
     val dateCreated: String? = null
 )

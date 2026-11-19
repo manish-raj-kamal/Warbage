@@ -30,6 +30,9 @@ interface LotDao {
     @Query("UPDATE lots SET status = :status WHERE id = :id")
     suspend fun updateStatus(id: Int, status: String)
 
+    @Query("UPDATE lots SET recyclerId = :recyclerId, recyclerName = :recyclerName, recyclerLocation = :recyclerLocation, recyclerPricePerKg = :pricePerKg, status = :status WHERE id = :id")
+    suspend fun updateRecycler(id: Int, recyclerId: String, recyclerName: String, recyclerLocation: String, pricePerKg: Double, status: String)
+
     @Query("SELECT COUNT(*) FROM lots")
     suspend fun getLotCount(): Int
 }
