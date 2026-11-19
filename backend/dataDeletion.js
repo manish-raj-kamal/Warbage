@@ -1,0 +1,647 @@
+// backend/dataDeletion.js
+// Dedicated Google Play & Data Safety compliant Account & Data Deletion Guide for Warbage (com.warbage.recycling)
+
+function getDataDeletionHtml() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account & Data Deletion - Warbage Recycling</title>
+  <meta name="description" content="Official Account and Data Deletion policy and instructions for Warbage: E-Waste Recycling Platform (com.warbage.recycling). Learn how to delete your account and personal data within 7 days.">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Account & Data Deletion - Warbage Recycling">
+  <meta property="og:description" content="Step-by-step instructions for self-service and email account and data deletion in Warbage with a 7-day grace period.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://warbage.vercel.app/data-deletion">
+  <style>
+    :root {
+      --primary: #059669;
+      --primary-light: #10b981;
+      --primary-dark: #047857;
+      --accent: #06b6d4;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --danger-border: #fca5a5;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --warning-border: #fcd34d;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+      --card-bg: #ffffff;
+      --code-bg: #f1f5f9;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background-color: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Navigation / Brand Banner */
+    header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 60%, #064e3b 100%);
+      color: #ffffff;
+      padding: 3rem 1.5rem 4rem;
+      text-align: center;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+
+    .brand-container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 68px;
+      height: 68px;
+      background: rgba(239, 68, 68, 0.15);
+      backdrop-filter: blur(8px);
+      border-radius: 20px;
+      margin-bottom: 1.25rem;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .brand-logo svg {
+      width: 36px;
+      height: 36px;
+      fill: none;
+      stroke: #f87171;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: #cbd5e1;
+      max-width: 620px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .metadata-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+
+    .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Main Container & Layout */
+    .container {
+      max-width: 900px;
+      margin: -2rem auto 4rem;
+      padding: 0 1.5rem;
+      position: relative;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+    }
+
+    /* 7-Day Guarantee Callout Card */
+    .guarantee-card {
+      background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+      border: 2px solid #86efac;
+      border-radius: 14px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 2.5rem;
+      display: flex;
+      gap: 1.25rem;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .guarantee-icon {
+      flex-shrink: 0;
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: #10b981;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .guarantee-icon svg {
+      width: 28px;
+      height: 28px;
+      stroke: #ffffff;
+      stroke-width: 2.2;
+      fill: none;
+    }
+
+    .guarantee-content h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #065f46;
+      margin-bottom: 0.35rem;
+      border-bottom: none;
+      padding: 0;
+    }
+
+    .guarantee-content p {
+      font-size: 0.95rem;
+      color: #047857;
+      margin-bottom: 0;
+      line-height: 1.5;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 2.5rem;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    h2 .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #fee2e2;
+      color: #b91c1c;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    p {
+      margin-bottom: 1rem;
+      color: #334155;
+    }
+
+    ul, ol {
+      margin-bottom: 1.25rem;
+      padding-left: 1.5rem;
+      color: #334155;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85em;
+      background: var(--code-bg);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+
+    /* Step-by-step workflow box */
+    .workflow-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .workflow-step {
+      display: flex;
+      gap: 1.25rem;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      align-items: flex-start;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .workflow-step:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+
+    .step-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #059669;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-badge.warning {
+      background: #d97706;
+    }
+
+    .step-badge.danger {
+      background: #dc2626;
+    }
+
+    .workflow-details h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0.3rem;
+    }
+
+    .workflow-details p {
+      font-size: 0.9rem;
+      color: #475569;
+      margin-bottom: 0;
+      line-height: 1.5;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 1.2rem;
+      border-radius: 10px;
+      margin: 1.25rem 0;
+      font-size: 0.95rem;
+    }
+
+    .alert-warning {
+      background: var(--warning-light);
+      border-left: 4px solid var(--warning);
+      color: #92400e;
+    }
+
+    .alert-danger {
+      background: var(--danger-light);
+      border-left: 4px solid var(--danger);
+      color: #991b1b;
+    }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    /* Action Buttons */
+    .action-btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.4rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      background: #ffffff;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        padding: 1.5rem;
+      }
+      h1 {
+        font-size: 1.75rem;
+      }
+      .guarantee-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .workflow-step {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Hero Header -->
+  <header>
+    <div class="brand-container">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </div>
+      <h1>Account & Data Deletion</h1>
+      <p class="subtitle">Self-service data removal protocol for the Warbage Recycling Platform</p>
+      
+      <div class="metadata-badges">
+        <span class="meta-badge">
+          <strong>Application:</strong> Warbage Recycling
+        </span>
+        <span class="meta-badge">
+          <strong>Package ID:</strong> <code>com.warbage.recycling</code>
+        </span>
+        <span class="meta-badge">
+          <strong>Window:</strong> 7-Day Self-Service Period
+        </span>
+        <span class="meta-badge">
+          <strong>Contact:</strong> m18labs.dev@gmail.com
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card">
+
+      <!-- 7-Day Deletion Guarantee Card -->
+      <div class="guarantee-card">
+        <div class="guarantee-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="guarantee-content">
+          <h2>7-Day Self-Service Deletion Window</h2>
+          <p>
+            Warbage provides users with complete autonomy over their data. When you initiate account deletion from the app, you enter a <strong>7-day self-service window</strong> during which you may cancel the request if initiated by mistake, or allow the system to permanently and irreversibly erase all personal records at the conclusion of the 7-day period.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 1: How to Delete Directly Within the App -->
+      <section>
+        <h2><span class="section-num">1</span> Self-Service In-App Deletion (Recommended)</h2>
+        <p>
+          You do not need to contact customer support or wait for administrative approval to delete your data. You can initiate your account deletion directly inside the Android application at any time:
+        </p>
+
+        <div class="workflow-container">
+          <div class="workflow-step">
+            <div class="step-badge">1</div>
+            <div class="workflow-details">
+              <h4>Open Profile Tab</h4>
+              <p>Launch the Warbage app on your Android device and tap the <strong>Profile</strong> tab in the bottom liquid navigation bar.</p>
+            </div>
+          </div>
+
+          <div class="workflow-step">
+            <div class="step-badge warning">2</div>
+            <div class="workflow-details">
+              <h4>Request Account Deletion (7-Day Period)</h4>
+              <p>Scroll down to the bottom of the Profile screen and tap <strong>"Request Account Deletion (7-Day Period)"</strong>. Confirm your decision on the confirmation dialog.</p>
+            </div>
+          </div>
+
+          <div class="workflow-step">
+            <div class="step-badge">3</div>
+            <div class="workflow-details">
+              <h4>7-Day Grace & Recovery Window</h4>
+              <p>Your profile immediately displays a visible countdown banner stating that your account is scheduled for deletion in 7 days. During these 7 days, your open lots and active pickup requests are paused to prevent new transactions.</p>
+            </div>
+          </div>
+
+          <div class="workflow-step">
+            <div class="step-badge danger">4</div>
+            <div class="workflow-details">
+              <h4>Permanent Automated Purge</h4>
+              <p>Once the 7-day period expires, our backend service and Room database permanently purge your user profile, personal information, authentication credentials, and open records. You will be automatically signed out and cannot recover the deleted account.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning">
+          <strong>Made a Mistake?</strong> If you change your mind within the 7-day period, simply log in to your Warbage app, open the <strong>Profile</strong> screen, and tap <strong>"Cancel Account Deletion"</strong> to instantly restore your account to active standing.
+        </div>
+      </section>
+
+      <!-- Section 2: Alternative Email / Web Deletion Request -->
+      <section>
+        <h2><span class="section-num">2</span> Manual Deletion Request via Email</h2>
+        <p>
+          If you have uninstalled the application, lost your device, or cannot log in to your account, you can submit an offline deletion request directly to our developer team:
+        </p>
+
+        <ul>
+          <li><strong>Email Address:</strong> <a href="mailto:m18labs.dev@gmail.com?subject=Account%20and%20Data%20Deletion%20Request%20-%20com.warbage.recycling">m18labs.dev@gmail.com</a></li>
+          <li><strong>Subject Line:</strong> <code>Account and Data Deletion Request - com.warbage.recycling</code></li>
+          <li><strong>Required Information:</strong>
+            <ol style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+              <li>Your registered email address associated with your Warbage account.</li>
+              <li>Your registered phone number (used to verify ownership).</li>
+              <li>Your user role (Collector or Recycler).</li>
+            </ol>
+          </li>
+          <li><strong>Turnaround Time:</strong> Our developer team processes identity verification and initiates the permanent purge within <strong>7 business days</strong>. Once finalized, a confirmation notice will be sent to your email.</li>
+        </ul>
+
+        <div class="action-btn-group">
+          <a class="btn btn-primary" href="mailto:m18labs.dev@gmail.com?subject=Account%20and%20Data%20Deletion%20Request%20-%20com.warbage.recycling">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            Send Deletion Request Email
+          </a>
+          <a class="btn btn-outline" href="/privacy">
+            View Full Privacy Policy
+          </a>
+        </div>
+      </section>
+
+      <!-- Section 3: Exactly What Data is Deleted vs Retained -->
+      <section>
+        <h2><span class="section-num">3</span> Data Retention & Permanent Deletion Matrix</h2>
+        <p>
+          Under Google Play Data Safety policies, GDPR, and Indian DPDP guidelines, we clearly disclose what records are wiped versus what is retained:
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Data Type</th>
+                <th>Status Upon Deletion</th>
+                <th>Details & Timeline</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Personal Identity</strong></td>
+                <td><span style="color: #dc2626; font-weight: bold;">Permanently Deleted</span></td>
+                <td>Your Full Name, Email, Phone Number, Firebase UID, and profile role are permanently erased from MongoDB and Firebase Authentication within 7 days.</td>
+              </tr>
+              <tr>
+                <td><strong>Open Scrap Lots</strong></td>
+                <td><span style="color: #dc2626; font-weight: bold;">Permanently Deleted</span></td>
+                <td>All active or open e-waste lots created by your account are removed from public and recycler listings.</td>
+              </tr>
+              <tr>
+                <td><strong>Pending Pickup Requests</strong></td>
+                <td><span style="color: #dc2626; font-weight: bold;">Cancelled & Purged</span></td>
+                <td>Any pending scrap pickup requests are immediately marked as <code>REJECTED</code>/cancelled and purged to release counterpart obligations.</td>
+              </tr>
+              <tr>
+                <td><strong>On-Device Local Cache</strong></td>
+                <td><span style="color: #dc2626; font-weight: bold;">Purged</span></td>
+                <td>Room database records on your Android device are cleared upon sign out or uninstallation.</td>
+              </tr>
+              <tr>
+                <td><strong>Past Completed Transactions</strong></td>
+                <td><span style="color: #d97706; font-weight: bold;">Anonymized Record</span></td>
+                <td>Past settled scrap transactions involving other certified recyclers retain numerical weight and settlement totals for mandatory financial accounting and tax audits; however, all personal names, phone numbers, and identifying collector details are stripped and irreversibly anonymized.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 4: Contact & Verification -->
+      <section>
+        <h2><span class="section-num">4</span> Questions or Assistance?</h2>
+        <p>
+          If you have questions regarding the data deletion process or need assistance with your Warbage account, please contact our support desk:
+        </p>
+        <p>
+          <strong>Developer Support:</strong> Manish Raj Kamal<br>
+          <strong>Email:</strong> <a href="mailto:m18labs.dev@gmail.com">m18labs.dev@gmail.com</a><br>
+          <strong>Entity:</strong> Warbage Eco Solutions<br>
+          <strong>Application:</strong> Warbage Recycling (<code>com.warbage.recycling</code>)
+        </p>
+      </section>
+
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Warbage Eco Solutions. All rights reserved.</p>
+    <p style="margin-top: 0.5rem;">
+      <a href="/privacy">Privacy Policy</a> &bull; 
+      <a href="/data-deletion">Data Deletion Protocol</a> &bull; 
+      <a href="mailto:m18labs.dev@gmail.com">m18labs.dev@gmail.com</a>
+    </p>
+  </footer>
+
+</body>
+</html>`;
+}
+
+module.exports = { getDataDeletionHtml };

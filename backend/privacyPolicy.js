@@ -721,6 +721,10 @@ function getPrivacyPolicyHtml() {
           <li>Provide your registered email address and phone number for ownership verification.</li>
           <li>Upon verification, our administrative team will permanently purge your user profile, personal identifiers, open lots, and associated metadata from our database within <strong>30 days</strong>, and confirm completion via email.</li>
         </ul>
+
+        <div class="alert alert-info">
+          <strong>7-Day Self-Service Deletion Window:</strong> When you initiate account deletion from the app, you enter a 7-day self-service window. During these 7 days, you can log in anytime to cancel the deletion request. After 7 days, the account is permanently purged. For full details and manual requests, see our dedicated <a href="/data-deletion"><strong>Account & Data Deletion Page</strong></a>.
+        </div>
       </section>
 
       <!-- Section 10: Children's Privacy -->
@@ -769,6 +773,7 @@ function getPrivacyPolicyHtml() {
     <p>&copy; 2026 Warbage Eco Solutions. All rights reserved.</p>
     <p style="margin-top: 0.5rem;">
       <a href="/privacy">Privacy Policy</a> &bull; 
+      <a href="/data-deletion">Data Deletion Policy</a> &bull; 
       <a href="https://github.com/manish-raj-kamal/Warbage" target="_blank" rel="noopener">GitHub Repository</a> &bull;
       <a href="mailto:m18labs.dev@gmail.com">Contact Privacy Team</a>
     </p>

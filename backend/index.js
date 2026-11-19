@@ -13,6 +13,7 @@ const User = require('./models/User');
 const Lot = require('./models/Lot');
 const Request = require('./models/Request');
 const { getPrivacyPolicyHtml } = require('./privacyPolicy');
+const { getDataDeletionHtml } = require('./dataDeletion');
 
 const app = express();
 
@@ -301,13 +302,22 @@ app.get(['/privacy', '/privacy-policy', '/privacy.html'], (req, res) => {
   res.send(privacyHtml);
 });
 
+// Account & Data Deletion Endpoints (Google Play Data Safety & 7-Day Protocol)
+const dataDeletionHtml = getDataDeletionHtml();
+app.get(['/data-deletion', '/delete-data', '/delete-account', '/data-deletion.html'], (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+  res.send(dataDeletionHtml);
+});
+
 // Health Check & Root Service Discovery
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
     service: 'Warbage Eco Backend API',
     version: '1.0.0',
-    privacyPolicy: 'https://warbage.vercel.app/privacy'
+    privacyPolicy: 'https://warbage.vercel.app/privacy',
+    dataDeletion: 'https://warbage.vercel.app/data-deletion'
   });
 });
 
