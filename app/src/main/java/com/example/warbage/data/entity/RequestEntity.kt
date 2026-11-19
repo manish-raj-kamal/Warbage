@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "requests")
 data class RequestEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val userId: String = "",
     val requestId: String,
     val lotId: Int,
     val recyclerId: Int,

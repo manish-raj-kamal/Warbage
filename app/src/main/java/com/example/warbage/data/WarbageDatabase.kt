@@ -9,11 +9,13 @@ import com.example.warbage.data.dao.LotDao
 import com.example.warbage.data.dao.MaterialDao
 import com.example.warbage.data.dao.RecyclerDao
 import com.example.warbage.data.dao.RequestDao
+import com.example.warbage.data.dao.UpgradeRequestDao
 import com.example.warbage.data.dao.UserDao
 import com.example.warbage.data.entity.LotEntity
 import com.example.warbage.data.entity.MaterialEntity
 import com.example.warbage.data.entity.RecyclerEntity
 import com.example.warbage.data.entity.RequestEntity
+import com.example.warbage.data.entity.UpgradeRequestEntity
 import com.example.warbage.data.entity.UserEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,9 +27,10 @@ import kotlinx.coroutines.launch
         RecyclerEntity::class,
         LotEntity::class,
         RequestEntity::class,
-        UserEntity::class
+        UserEntity::class,
+        UpgradeRequestEntity::class
     ],
-    version = 2,
+    version = 8,
     exportSchema = true
 )
 abstract class WarbageDatabase : RoomDatabase() {
@@ -37,6 +40,7 @@ abstract class WarbageDatabase : RoomDatabase() {
     abstract fun lotDao(): LotDao
     abstract fun requestDao(): RequestDao
     abstract fun userDao(): UserDao
+    abstract fun upgradeRequestDao(): UpgradeRequestDao
 
     companion object {
         @Volatile
@@ -61,6 +65,16 @@ abstract class WarbageDatabase : RoomDatabase() {
     private class PrepopulateCallback : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
+            INSTANCE?.let { database ->
+                CoroutineScope(Dispatchers.IO).launch {
+                    populateMaterials(database.materialDao())
+                    populateRecyclers(database.recyclerDao())
+                }
+            }
+        }
+
+        override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
+            super.onDestructiveMigration(db)
             INSTANCE?.let { database ->
                 CoroutineScope(Dispatchers.IO).launch {
                     populateMaterials(database.materialDao())
@@ -171,42 +185,22 @@ abstract class WarbageDatabase : RoomDatabase() {
                 listOf(
                     RecyclerEntity(
                         id = 1,
-                        name = "Green Recyclers",
+                        name = "Demo Recycler",
                         location = "Mumbai",
                         latitude = 19.076,
                         longitude = 72.877,
-                        materials = "PCB,Batteries,Cables",
+                        materials = "PCB,Batteries,Cables,Mobile",
                         pricePerKg = 550,
                         authorized = true
                     ),
                     RecyclerEntity(
                         id = 2,
-                        name = "EcoTech Solutions",
-                        location = "Pune",
-                        latitude = 18.520,
-                        longitude = 73.856,
-                        materials = "LCD/LED,Motors,CRT",
-                        pricePerKg = 180,
-                        authorized = true
-                    ),
-                    RecyclerEntity(
-                        id = 3,
-                        name = "CleanE Waste",
+                        name = "Demo EcoTech Solutions",
                         location = "Delhi",
                         latitude = 28.613,
                         longitude = 77.209,
-                        materials = "PCB,Cables,Mixed Plastics",
+                        materials = "LCD/LED,Motors,CRT,Mixed Plastics",
                         pricePerKg = 480,
-                        authorized = true
-                    ),
-                    RecyclerEntity(
-                        id = 4,
-                        name = "RecycleHub India",
-                        location = "Bangalore",
-                        latitude = 12.971,
-                        longitude = 77.594,
-                        materials = "PCB,Cables,Batteries,LCD/LED,Motors,CRT,Mixed Plastics",
-                        pricePerKg = 400,
                         authorized = true
                     )
                 )

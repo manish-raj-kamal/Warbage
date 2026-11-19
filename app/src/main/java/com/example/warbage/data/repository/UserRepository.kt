@@ -10,6 +10,8 @@ class UserRepository(private val userDao: UserDao) {
 
     suspend fun getUserSync(uid: String): UserEntity? = userDao.getUserSync(uid)
 
+    suspend fun getUserByEmail(email: String): UserEntity? = userDao.getUserByEmail(email)
+
     fun getLastActiveUser(): Flow<UserEntity?> = userDao.getLastActiveUser()
 
     suspend fun getLastActiveUserSync(): UserEntity? = userDao.getLastActiveUserSync()

@@ -53,7 +53,7 @@ fun LiquidSegmentedTabs(
                 blurRadius = 20.dp,
                 lensHeight = 14.dp,
                 lensAmount = 16.dp,
-                tint = if (isDark) Color(0x3314221A) else Color(0x77FFFFFF),
+                tint = if (isDark) Color(0x380F172A) else Color(0x55FFFFFF),
                 elevation = 4.dp
             )
             .padding(4.dp)

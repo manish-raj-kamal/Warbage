@@ -1,14 +1,25 @@
 package com.example.warbage.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -20,6 +31,11 @@ import com.example.warbage.ui.glass.GlassCard
 import com.example.warbage.ui.glass.GlassIconButton
 import com.example.warbage.ui.glass.LiquidTopAppBar
 import com.example.warbage.ui.glass.liquidGlass
+import com.example.warbage.ui.theme.CyanBright
+import com.example.warbage.ui.theme.EmeraldBright
+import com.example.warbage.ui.theme.EmeraldNeon
+import com.example.warbage.ui.theme.GoldBright
+import com.example.warbage.ui.theme.VioletBright
 
 @Composable
 fun HomeScreen(
@@ -28,7 +44,6 @@ fun HomeScreen(
     onFindRecyclerClick: () -> Unit,
     onTransactionsClick: () -> Unit,
     onAiScannerClick: () -> Unit,
-    onSwitchRole: () -> Unit,
     onProfileClick: () -> Unit = {}
 ) {
     Scaffold(
@@ -37,76 +52,90 @@ fun HomeScreen(
             LiquidTopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        // High-tech circular brand icon
                         Box(
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(42.dp)
                                 .liquidGlass(
                                     shape = CircleShape,
-                                    blurRadius = 12.dp,
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                                    borderAlpha = 0.5f,
-                                    elevation = 2.dp
+                                    blurRadius = 14.dp,
+                                    tint = EmeraldBright.copy(alpha = 0.22f),
+                                    borderAlpha = 0.6f,
+                                    elevation = 3.dp
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Recycling,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                imageVector = Icons.Default.AllInclusive,
+                                contentDescription = "WARBAGE Logo",
+                                tint = EmeraldBright,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "WARbage",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 22.sp
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "WARBAGE",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 20.sp,
+                                letterSpacing = 0.5.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Circular E-Waste Exchange",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
                 actions = {
-                    GlassIconButton(
-                        onClick = onSwitchRole,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = "Switch Role",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    GlassIconButton(
-                        onClick = onProfileClick,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
+                    // Profile button with active status ring
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        GlassIconButton(
+                            onClick = onProfileClick,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Profile",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        // Active green beacon
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .offset(x = (-2).dp, y = (-2).dp)
+                                .shadow(4.dp, CircleShape, spotColor = EmeraldNeon)
+                                .clip(CircleShape)
+                                .background(EmeraldNeon)
                         )
                     }
                 }
             )
         },
         floatingActionButton = {
+            // High-Tech Holographic AI Scanner Button
             GlassButton(
                 onClick = onAiScannerClick,
                 shape = CircleShape,
-                tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f),
+                tint = VioletBright.copy(alpha = 0.32f),
                 elevation = 8.dp
             ) {
                 Icon(
-                    Icons.Default.CameraAlt,
+                    imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(22.dp)
+                    tint = VioletBright,
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "AI Scanner",
+                    text = "AI Material Scanner",
                     fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -116,153 +145,324 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // Welcome Header Glass Banner
+            // HERO CARD: Value Portfolio & Carbon Offset
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(26.dp),
-                elevation = 4.dp
+                shape = RoundedCornerShape(28.dp),
+                elevation = 6.dp
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(22.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Welcome, Collector! ✨",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "ESTIMATED RECYCLE VALUE",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.8.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "₹12,480",
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        // Growth indicator pill
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .liquidGlass(
+                                    shape = CircleShape,
+                                    blurRadius = 10.dp,
+                                    tint = EmeraldBright.copy(alpha = 0.20f),
+                                    borderAlpha = 0.45f,
+                                    elevation = 1.dp
+                                )
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                                contentDescription = null,
+                                tint = EmeraldBright,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "+14.8%",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = EmeraldBright
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Dual Impact Metrics Grid
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Stat 1: Weight Diverted
+                        MiniStatPill(
+                            icon = Icons.Default.Recycling,
+                            value = "38.5 kg",
+                            label = "E-Waste Diverted",
+                            accent = EmeraldBright,
+                            modifier = Modifier.weight(1f)
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Turn your electronics into instant value with AI scanning and verified recycling.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+
+                        // Stat 2: Carbon Footprint Saved
+                        MiniStatPill(
+                            icon = Icons.Default.Co2,
+                            value = "16.2 kg",
+                            label = "CO₂ Emissions Saved",
+                            accent = CyanBright,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
             }
 
+            // SECTION HEADER
             Text(
-                text = "Dashboard",
+                text = "Marketplace Services",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp)
             )
 
-            // Grid Cards
+            // 2x2 Interactive Services Grid
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                DashboardGlassCard(
-                    title = "My Materials",
-                    icon = Icons.Default.Inventory2,
-                    description = "Browse e-waste catalog",
+                DashboardServiceCard(
+                    title = "E-Waste Catalog",
+                    caption = "15+ Certified Materials",
+                    icon = Icons.Default.Category,
+                    accentColor = EmeraldBright,
                     onClick = onMaterialsClick,
-                    accentColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
-                DashboardGlassCard(
-                    title = "Price Board",
-                    icon = Icons.Default.CurrencyRupee,
-                    description = "Current market rates",
+                DashboardServiceCard(
+                    title = "Live Price Board",
+                    caption = "Daily Commodity Ticker",
+                    icon = Icons.Default.QueryStats,
+                    accentColor = CyanBright,
                     onClick = onPriceBoardClick,
-                    accentColor = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.weight(1f)
                 )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                DashboardGlassCard(
+                DashboardServiceCard(
                     title = "Find Recycler",
-                    icon = Icons.Default.LocationOn,
-                    description = "Nearby recyclers on map",
+                    caption = "Nearby Verified Yards",
+                    icon = Icons.Default.NearMe,
+                    accentColor = VioletBright,
                     onClick = onFindRecyclerClick,
-                    accentColor = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.weight(1f)
                 )
-                DashboardGlassCard(
-                    title = "Transactions",
-                    icon = Icons.Default.Receipt,
-                    description = "Lots & request history",
+                DashboardServiceCard(
+                    title = "My Orders",
+                    caption = "Lots & Handover Status",
+                    icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                    accentColor = GoldBright,
                     onClick = onTransactionsClick,
-                    accentColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            // LIVE COMMODITY SNAPSHOT BANNER
+            GlassCard(
+                onClick = onPriceBoardClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                elevation = 3.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .liquidGlass(
+                                    shape = CircleShape,
+                                    blurRadius = 10.dp,
+                                    tint = GoldBright.copy(alpha = 0.18f),
+                                    borderAlpha = 0.4f,
+                                    elevation = 1.dp
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ShowChart,
+                                contentDescription = null,
+                                tint = GoldBright,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column {
+                            Text(
+                                text = "Market Surge: Lithium Cells",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Demand up +8.4% • Up to ₹120/kg",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                        contentDescription = "View Prices",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(60.dp)) // Padding for FAB
         }
     }
 }
 
 @Composable
-private fun DashboardGlassCard(
-    title: String,
+private fun MiniStatPill(
     icon: ImageVector,
-    description: String,
-    onClick: () -> Unit,
+    value: String,
+    label: String,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .liquidGlass(
+                shape = RoundedCornerShape(18.dp),
+                blurRadius = 12.dp,
+                tint = accent.copy(alpha = 0.12f),
+                borderAlpha = 0.35f,
+                elevation = 2.dp
+            )
+            .padding(14.dp)
+    ) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun DashboardServiceCard(
+    title: String,
+    caption: String,
+    icon: ImageVector,
     accentColor: Color,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     GlassCard(
         onClick = onClick,
-        modifier = modifier.aspectRatio(1f),
+        modifier = modifier.aspectRatio(0.92f),
         shape = RoundedCornerShape(26.dp),
         tint = accentColor.copy(alpha = 0.12f),
-        elevation = 6.dp
+        elevation = 5.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
+            // Luminous Icon Beacon
             Box(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(50.dp)
                     .liquidGlass(
                         shape = CircleShape,
                         blurRadius = 14.dp,
                         lensHeight = 10.dp,
                         lensAmount = 12.dp,
                         tint = accentColor.copy(alpha = 0.22f),
-                        borderAlpha = 0.45f,
-                        elevation = 2.dp
+                        borderAlpha = 0.5f,
+                        elevation = 3.dp
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(26.dp),
                     tint = accentColor
                 )
             }
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
+
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = caption,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 11.sp
+                )
+            }
         }
     }
 }

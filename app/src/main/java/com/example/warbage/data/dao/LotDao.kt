@@ -12,6 +12,12 @@ interface LotDao {
     @Query("SELECT * FROM lots ORDER BY dateCreated DESC")
     fun getAllLots(): Flow<List<LotEntity>>
 
+    @Query("SELECT * FROM lots WHERE userId = :userId ORDER BY dateCreated DESC")
+    fun getLotsByUser(userId: String): Flow<List<LotEntity>>
+
+    @Query("SELECT * FROM lots WHERE userId = :userId ORDER BY dateCreated DESC")
+    suspend fun getLotsByUserOnce(userId: String): List<LotEntity>
+
     @Query("SELECT * FROM lots WHERE id = :id")
     fun getLotById(id: Int): Flow<LotEntity?>
 

@@ -6,7 +6,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.CurrencyRupee
+import androidx.compose.material.icons.filled.Factory
+import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +34,9 @@ import com.example.warbage.ui.glass.GlassIconButton
 import com.example.warbage.ui.glass.LiquidSegmentedTabs
 import com.example.warbage.ui.glass.LiquidTopAppBar
 import com.example.warbage.ui.glass.liquidGlass
+import com.example.warbage.ui.theme.CyanBright
+import com.example.warbage.ui.theme.EmeraldBright
+import com.example.warbage.ui.theme.GoldBright
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -32,11 +44,14 @@ import java.util.*
 fun RecyclerDashboardScreen(
     database: WarbageDatabase,
     onRequestClick: (requestId: Int) -> Unit,
-    onSwitchRole: () -> Unit,
     onProfileClick: () -> Unit = {}
 ) {
-    val requests by database.requestDao().getPendingRequests().collectAsState(initial = emptyList())
-    val allRequests by database.requestDao().getAllRequests().collectAsState(initial = emptyList())
+    val currentUser by database.userDao().getLastActiveUser().collectAsState(initial = null)
+    val recycler by database.recyclerDao().getRecyclerByName(currentUser?.displayName ?: "").collectAsState(initial = null)
+    val recyclerId = recycler?.id ?: -1
+
+    val requests by database.requestDao().getPendingRequestsForRecycler(recyclerId).collectAsState(initial = emptyList())
+    val allRequests by database.requestDao().getAllRequestsForRecycler(recyclerId).collectAsState(initial = emptyList())
     val lots by database.lotDao().getAllLots().collectAsState(initial = emptyList())
     val materials by database.materialDao().getAllMaterials().collectAsState(initial = emptyList())
 
@@ -46,6 +61,14 @@ fun RecyclerDashboardScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val displayRequests = if (selectedTab == 0) requests else allRequests
 
+    // Calculate total pending weight & value
+    val totalPendingWeight = remember(requests, lotMap) {
+        requests.sumOf { req -> lotMap[req.lotId]?.weight ?: 0.0 }
+    }
+    val totalPendingValue = remember(requests, lotMap) {
+        requests.sumOf { req -> lotMap[req.lotId]?.estimatedMaxValue ?: 0.0 }
+    }
+
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
@@ -54,11 +77,11 @@ fun RecyclerDashboardScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(40.dp)
                                 .liquidGlass(
                                     shape = CircleShape,
                                     blurRadius = 12.dp,
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                                    tint = CyanBright.copy(alpha = 0.22f),
                                     borderAlpha = 0.5f,
                                     elevation = 2.dp
                                 ),
@@ -67,38 +90,36 @@ fun RecyclerDashboardScreen(
                             Icon(
                                 imageVector = Icons.Default.Factory,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
+                                tint = CyanBright,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Recycler Portal",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
+                        Column {
+                            Text(
+                                text = "Recycler Terminal",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Certified Processing Yard",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 },
                 actions = {
                     GlassIconButton(
-                        onClick = onSwitchRole,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = "Switch Role",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    GlassIconButton(
                         onClick = onProfileClick,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
                     ) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
                             contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -111,14 +132,144 @@ fun RecyclerDashboardScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Enhanced Hero Dashboard Visual
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .liquidGlass(
+                        shape = RoundedCornerShape(26.dp),
+                        blurRadius = 14.dp,
+                        tint = CyanBright.copy(alpha = 0.12f),
+                        borderAlpha = 0.5f,
+                        elevation = 6.dp
+                    )
+            ) {
+                Column(
+                    modifier = Modifier.padding(22.dp)
+                ) {
+                    Text(
+                        text = "Good to see you, ${currentUser?.displayName?.substringBefore(" ") ?: "Partner"}!",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Here is your facility's live processing overview.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // 2x2 Grid for Metrics
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Metric 1: Pending Requests
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .liquidGlass(
+                                    shape = RoundedCornerShape(16.dp),
+                                    blurRadius = 8.dp,
+                                    tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    borderAlpha = 0.3f,
+                                    elevation = 1.dp
+                                )
+                                .padding(14.dp)
+                        ) {
+                            Column {
+                                Icon(Icons.Default.HourglassTop, contentDescription = null, tint = GoldBright, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("${requests.size}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+                                Text("Pending Intake", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        // Metric 2: Total Weight
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .liquidGlass(
+                                    shape = RoundedCornerShape(16.dp),
+                                    blurRadius = 8.dp,
+                                    tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    borderAlpha = 0.3f,
+                                    elevation = 1.dp
+                                )
+                                .padding(14.dp)
+                        ) {
+                            Column {
+                                Icon(Icons.Default.Scale, contentDescription = null, tint = CyanBright, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("${String.format("%.1f", totalPendingWeight)}kg", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = CyanBright)
+                                Text("Queue Weight", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Metric 3: Total Completed
+                        val completedCount = allRequests.count { it.status == "completed" }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .liquidGlass(
+                                    shape = RoundedCornerShape(16.dp),
+                                    blurRadius = 8.dp,
+                                    tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    borderAlpha = 0.3f,
+                                    elevation = 1.dp
+                                )
+                                .padding(14.dp)
+                        ) {
+                            Column {
+                                Icon(Icons.Default.Verified, contentDescription = null, tint = EmeraldBright, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("$completedCount", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+                                Text("Completed", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        // Metric 4: Estimated Value
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .liquidGlass(
+                                    shape = RoundedCornerShape(16.dp),
+                                    blurRadius = 8.dp,
+                                    tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    borderAlpha = 0.3f,
+                                    elevation = 1.dp
+                                )
+                                .padding(14.dp)
+                        ) {
+                            Column {
+                                Icon(Icons.Default.CurrencyRupee, contentDescription = null, tint = EmeraldBright, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("₹${String.format("%,.0f", totalPendingValue)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = EmeraldBright)
+                                Text("Est. Queue Value", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            }
+
             // Liquid Segmented Tabs
             LiquidSegmentedTabs(
-                tabs = listOf("Pending (${requests.size})", "All History (${allRequests.size})"),
+                tabs = listOf("Pending Queue (${requests.size})", "All Logs (${allRequests.size})"),
                 selectedTabIndex = selectedTab,
                 onTabSelected = { selectedTab = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .padding(horizontal = 20.dp, vertical = 6.dp)
             )
 
             if (displayRequests.isEmpty()) {
@@ -129,8 +280,8 @@ fun RecyclerDashboardScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     GlassCard(
-                        modifier = Modifier.fillMaxWidth(0.85f),
-                        shape = RoundedCornerShape(24.dp),
+                        modifier = Modifier.fillMaxWidth(0.9f),
+                        shape = RoundedCornerShape(26.dp),
                         elevation = 4.dp
                     ) {
                         Column(
@@ -139,20 +290,35 @@ fun RecyclerDashboardScreen(
                                 .padding(32.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = if (selectedTab == 0) "📭" else "📋",
-                                style = MaterialTheme.typography.displayMedium
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .liquidGlass(
+                                        shape = CircleShape,
+                                        blurRadius = 14.dp,
+                                        tint = CyanBright.copy(alpha = 0.16f),
+                                        borderAlpha = 0.4f,
+                                        elevation = 2.dp
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (selectedTab == 0) Icons.Default.Inbox else Icons.AutoMirrored.Filled.ReceiptLong,
+                                    contentDescription = null,
+                                    tint = CyanBright,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = if (selectedTab == 0) "No pending requests" else "No requests yet",
+                                text = if (selectedTab == 0) "Queue is Empty" else "No Handover Records",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "New requests will appear here in real-time.",
+                                text = "New pickup and delivery requests from collectors will stream here automatically.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -193,7 +359,7 @@ private fun RequestGlassCard(
     GlassCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(24.dp),
         elevation = 4.dp
     ) {
         Column(
@@ -206,59 +372,110 @@ private fun RequestGlassCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = request.requestId,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .liquidGlass(
+                                shape = CircleShape,
+                                blurRadius = 10.dp,
+                                tint = CyanBright.copy(alpha = 0.18f),
+                                borderAlpha = 0.45f,
+                                elevation = 1.dp
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Inventory2,
+                            contentDescription = null,
+                            tint = CyanBright,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = request.requestId,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 StatusBadge(status = request.status)
             }
+
             if (lot != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "${lot.lotId} • ${material?.name ?: "Unknown"}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Column {
+                        Text(
+                            text = "${material?.icon ?: "📦"} ${material?.name ?: "E-Waste Item"}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Lot ID: ${lot.lotId}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Weight & Value Pill
                     Box(
                         modifier = Modifier
                             .liquidGlass(
-                                shape = RoundedCornerShape(8.dp),
-                                blurRadius = 8.dp,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                                shape = RoundedCornerShape(12.dp),
+                                blurRadius = 10.dp,
+                                tint = EmeraldBright.copy(alpha = 0.16f),
                                 borderAlpha = 0.4f,
                                 elevation = 1.dp
                             )
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
                         Text(
-                            text = "${lot.weight} kg",
-                            style = MaterialTheme.typography.labelSmall,
+                            text = "${lot.weight} kg • ₹${String.format("%,.0f", lot.estimatedMaxValue)}",
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = EmeraldBright
                         )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = dateFormat.format(Date(request.dateCreated)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "₹${String.format("%,.0f", lot.estimatedMinValue)}–₹${String.format("%,.0f", lot.estimatedMaxValue)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold
+                        text = "Review & Act",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = CyanBright
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                        contentDescription = null,
+                        tint = CyanBright,
+                        modifier = Modifier.size(11.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = dateFormat.format(Date(request.dateCreated)),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            )
         }
     }
 }

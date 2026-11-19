@@ -1,10 +1,13 @@
 package com.example.warbage.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.warbage.data.WarbageDatabase
 import com.example.warbage.data.entity.RequestEntity
 import com.example.warbage.data.repository.LotRepository
@@ -20,6 +24,9 @@ import com.example.warbage.ui.glass.GlassButton
 import com.example.warbage.ui.glass.GlassCard
 import com.example.warbage.ui.glass.GlassIconButton
 import com.example.warbage.ui.glass.LiquidTopAppBar
+import com.example.warbage.ui.glass.liquidGlass
+import com.example.warbage.ui.theme.CyanBright
+import com.example.warbage.ui.theme.EmeraldBright
 import kotlinx.coroutines.launch
 
 @Composable
@@ -30,6 +37,7 @@ fun CreateRequestScreen(
     onRequestCreated: () -> Unit,
     onBack: () -> Unit
 ) {
+    val currentUser by database.userDao().getLastActiveUser().collectAsState(initial = null)
     val lot by database.lotDao().getLotById(lotId).collectAsState(initial = null)
     val recycler by database.recyclerDao().getRecyclerById(recyclerId).collectAsState(initial = null)
     val material by remember(lot) {
@@ -46,7 +54,7 @@ fun CreateRequestScreen(
         containerColor = Color.Transparent,
         topBar = {
             LiquidTopAppBar(
-                title = { Text("Submit Request", fontWeight = FontWeight.Bold) },
+                title = { Text("Handover Request", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     GlassIconButton(
                         onClick = onBack,
@@ -66,54 +74,86 @@ fun CreateRequestScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(
                     text = "Handover Summary",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // Lot info glass cards
+                // Lot details in clean cards
                 InfoGlassCard("Lot Identifier", currentLot.lotId)
-                InfoGlassCard("Material", material?.let { "${it.icon} ${it.name}" } ?: "Loading...")
-                InfoGlassCard("Weight", "${currentLot.weight} kg")
-                InfoGlassCard("Estimated Value", "₹${String.format("%,.0f", currentLot.estimatedMinValue)} – ₹${String.format("%,.0f", currentLot.estimatedMaxValue)}")
+                InfoGlassCard("Material Type", material?.let { "${it.icon} ${it.name}" } ?: "Loading...")
+                InfoGlassCard("Batch Weight", "${currentLot.weight} kg")
+                InfoGlassCard("Valuation Range", "₹${String.format("%,.0f", currentLot.estimatedMinValue)} – ₹${String.format("%,.0f", currentLot.estimatedMaxValue)}")
 
-                // Recycler Glass Card
+                // Target Recycler Card
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
-                    tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f),
+                    tint = CyanBright.copy(alpha = 0.14f),
                     elevation = 4.dp
                 ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
-                        Text(
-                            text = "Target Recycler",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = currentRecycler.name,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "${currentRecycler.location} • ₹${currentRecycler.pricePerKg}/kg",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .liquidGlass(
+                                    shape = CircleShape,
+                                    blurRadius = 10.dp,
+                                    tint = CyanBright.copy(alpha = 0.22f),
+                                    borderAlpha = 0.5f,
+                                    elevation = 2.dp
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Business,
+                                contentDescription = null,
+                                tint = CyanBright,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = currentRecycler.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Verified,
+                                    contentDescription = "Verified",
+                                    tint = EmeraldBright,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${currentRecycler.location} • Rate: ₹${currentRecycler.pricePerKg}/kg",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
+                // Submit Action Button
                 GlassButton(
                     onClick = {
                         if (!isSubmitting) {
@@ -121,6 +161,7 @@ fun CreateRequestScreen(
                             scope.launch {
                                 val reqNum = requestRepository.getNextRequestNumber()
                                 val request = RequestEntity(
+                                    userId = currentUser?.uid ?: "",
                                     requestId = "REQ-${String.format("%03d", reqNum)}",
                                     lotId = lotId,
                                     recyclerId = recyclerId,
@@ -135,22 +176,24 @@ fun CreateRequestScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(54.dp),
                     enabled = !isSubmitting,
                     isLoading = isSubmitting,
+                    tint = EmeraldBright.copy(alpha = 0.35f),
                     shape = RoundedCornerShape(18.dp)
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Submit Request",
+                        text = "Submit Pickup Request",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -161,7 +204,7 @@ fun CreateRequestScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                CircularProgressIndicator(color = EmeraldBright)
             }
         }
     }
@@ -171,16 +214,21 @@ fun CreateRequestScreen(
 private fun InfoGlassCard(title: String, content: String) {
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         elevation = 2.dp
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = content,
                 style = MaterialTheme.typography.titleMedium,

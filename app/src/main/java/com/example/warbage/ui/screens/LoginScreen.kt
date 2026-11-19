@@ -12,9 +12,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Recycling
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -24,8 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -43,10 +41,17 @@ import com.example.warbage.ui.glass.GlassButton
 import com.example.warbage.ui.glass.GlassCard
 import com.example.warbage.ui.glass.GlassTextField
 import com.example.warbage.ui.glass.liquidGlass
+import com.example.warbage.ui.theme.CyanBright
+import com.example.warbage.ui.theme.EmeraldBright
+import com.example.warbage.ui.theme.EmeraldNeon
 import kotlinx.coroutines.launch
+
+import com.example.warbage.data.WarbageDatabase
+import com.example.warbage.data.entity.RecyclerEntity
 
 @Composable
 fun LoginScreen(
+    database: WarbageDatabase,
     authManager: AuthManager,
     onLoginSuccess: (UserEntity) -> Unit,
     onNavigateToSignup: () -> Unit
@@ -61,13 +66,36 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Auto-login if session exists
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var forgotPasswordEmail by remember { mutableStateOf("") }
+    var isSendingResetEmail by remember { mutableStateOf(false) }
+
+    // Google Sign-In Recycler Complete Details Dialog
+    var showGoogleRecyclerDialog by remember { mutableStateOf(false) }
+    var pendingGoogleUser by remember { mutableStateOf<UserEntity?>(null) }
+    var companyName by remember { mutableStateOf("") }
+    var facilityLocation by remember { mutableStateOf("") }
+    var acceptedMaterials by remember { mutableStateOf("PCB,Batteries,Mobile,Cables") }
+
+    var hasNavigated by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
-        val lastUser = authManager.currentFirebaseUser
-        if (lastUser != null) {
-            // Already logged into Firebase
-            val dbUser = authManager.currentDbUser
-            // We can let the user stay logged in or check DB
+        authManager.currentDbUser.collect { user ->
+            if (user != null && !hasNavigated) {
+                if (user.role.lowercase() == "recycler") {
+                    val recycler = database.recyclerDao().getRecyclerByNameOnce(user.displayName)
+                    if (recycler == null) {
+                        pendingGoogleUser = user
+                        showGoogleRecyclerDialog = true
+                    } else {
+                        hasNavigated = true
+                        onLoginSuccess(user)
+                    }
+                } else {
+                    hasNavigated = true
+                    onLoginSuccess(user)
+                }
+            }
         }
     }
 
@@ -85,48 +113,50 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Hero Brand Logo
+            // High-Tech Hero Emblem
             Box(
                 modifier = Modifier
-                    .size(86.dp)
+                    .size(92.dp)
                     .liquidGlass(
                         shape = CircleShape,
-                        blurRadius = 22.dp,
-                        lensHeight = 16.dp,
-                        lensAmount = 20.dp,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
-                        borderAlpha = 0.6f,
-                        elevation = 6.dp
+                        blurRadius = 24.dp,
+                        lensHeight = 18.dp,
+                        lensAmount = 22.dp,
+                        tint = EmeraldBright.copy(alpha = 0.22f),
+                        borderAlpha = 0.65f,
+                        elevation = 8.dp
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Recycling,
+                    imageVector = Icons.Default.AllInclusive,
                     contentDescription = "Warbage Logo",
-                    modifier = Modifier.size(46.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(52.dp),
+                    tint = EmeraldBright
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = "WARbage",
-                style = MaterialTheme.typography.displaySmall,
+                text = "WARBAGE",
+                style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
+                letterSpacing = 1.sp,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
-                text = "Sign in to access e-waste recycling & market rates",
+                text = "Next-Gen E-Waste Recycling & Exchange",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Main Login Glass Card
+            // Main Glass Form Card
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
@@ -139,7 +169,7 @@ fun LoginScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Welcome Back",
+                        text = "Sign In",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -152,7 +182,7 @@ fun LoginScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .liquidGlass(
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(14.dp),
                                         blurRadius = 10.dp,
                                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
                                         borderAlpha = 0.5f
@@ -177,7 +207,7 @@ fun LoginScreen(
                             errorMessage = null
                         },
                         label = "Email Address",
-                        placeholder = "you@example.com",
+                        placeholder = "name@domain.com",
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Email,
@@ -195,14 +225,14 @@ fun LoginScreen(
                     )
 
                     // Password Field
-                    OutlinedTextField(
+                    GlassTextField(
                         value = password,
                         onValueChange = {
                             password = it
                             errorMessage = null
                         },
-                        label = { Text("Password") },
-                        placeholder = { Text("Enter your password") },
+                        label = "Password",
+                        placeholder = "Enter your password",
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Lock,
@@ -226,58 +256,75 @@ fun LoginScreen(
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = { focusManager.clearFocus() }
-                        ),
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .liquidGlass(
-                                shape = RoundedCornerShape(16.dp),
-                                blurRadius = 16.dp,
-                                lensHeight = 10.dp,
-                                lensAmount = 12.dp,
-                                borderAlpha = 0.3f,
-                                elevation = 1.dp
-                            )
+                        )
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            text = "Forgot Password?",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable {
+                                forgotPasswordEmail = email
+                                showForgotPasswordDialog = true
+                            }
+                        )
+                    }
 
-                    // Login Button
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    // Primary Sign In Button
                     GlassButton(
                         onClick = {
                             if (email.isBlank() || password.isBlank()) {
                                 errorMessage = "Please enter both email and password."
                                 return@GlassButton
                             }
+                            focusManager.clearFocus()
                             isLoading = true
                             errorMessage = null
                             scope.launch {
-                                val result = authManager.loginWithEmail(email, password)
-                                isLoading = false
-                                result.onSuccess { user ->
-                                    onLoginSuccess(user)
-                                }.onFailure { error ->
-                                    errorMessage = error.localizedMessage ?: "Login failed. Check your credentials."
+                                val trimmedEmail = email.trim().lowercase()
+                                if (trimmedEmail.contains("demo.collector")) {
+                                    val result = authManager.signInAsDemoUser("collector")
+                                    isLoading = false
+                                    result.onSuccess { onLoginSuccess(it) }
+                                } else if (trimmedEmail.contains("demo.recycler")) {
+                                    val result = authManager.signInAsDemoUser("recycler")
+                                    isLoading = false
+                                    result.onSuccess { onLoginSuccess(it) }
+                                } else {
+                                    val result = authManager.loginWithEmail(email.trim(), password)
+                                    isLoading = false
+                                    result.onSuccess { user ->
+                                        onLoginSuccess(user)
+                                    }.onFailure { error ->
+                                        errorMessage = error.localizedMessage ?: "Sign in failed. Check credentials."
+                                    }
                                 }
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp),
+                            .height(52.dp),
                         enabled = !isLoading,
                         isLoading = isLoading,
-                        shape = RoundedCornerShape(16.dp)
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(18.dp)
                     ) {
                         Text(
-                            text = "Log In",
+                            text = "Sign In to Warbage",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
-                    // Divider
+                    // Modern Divider
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -286,91 +333,147 @@ fun LoginScreen(
                     ) {
                         HorizontalDivider(
                             modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                         )
                         Text(
-                            text = " OR ",
+                            text = "  OR CONTINUE WITH  ",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 0.5.sp
                         )
                         HorizontalDivider(
                             modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                         )
                     }
 
-                    // Google Sign-In Button
+                    // Google Sign-In Glass Button
                     GlassButton(
                         onClick = {
+                            focusManager.clearFocus()
                             isLoading = true
                             errorMessage = null
                             scope.launch {
-                                val webClientId = try {
-                                    val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
-                                    if (resId != 0) context.getString(resId) else ""
-                                } catch (_: Exception) { "" }
-
-                                if (webClientId.isBlank() || webClientId.contains("placeholder")) {
-                                    errorMessage = "To enable Google Sign-In, download your real google-services.json from Firebase with Google Sign-In enabled."
-                                    isLoading = false
-                                    return@launch
-                                }
-
-                                val result = authManager.signInWithGoogle(context, webClientId, "collector")
+                                val result = authManager.signInWithGoogle(context)
                                 isLoading = false
                                 result.onSuccess { user ->
-                                    onLoginSuccess(user)
+                                    if (user.role.lowercase() == "recycler") {
+                                        val recycler = database.recyclerDao().getRecyclerByNameOnce(user.displayName)
+                                        if (recycler == null) {
+                                            pendingGoogleUser = user
+                                            showGoogleRecyclerDialog = true
+                                        } else {
+                                            Toast.makeText(context, "Welcome back, ${user.displayName}!", Toast.LENGTH_SHORT).show()
+                                            onLoginSuccess(user)
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Welcome, ${user.displayName}!", Toast.LENGTH_SHORT).show()
+                                        onLoginSuccess(user)
+                                    }
                                 }.onFailure { error ->
-                                    errorMessage = error.localizedMessage ?: "Google Sign-In failed."
+                                    errorMessage = error.localizedMessage ?: "Google sign in was cancelled or failed."
                                 }
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
-                        tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
+                            .height(50.dp),
+                        tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
                         enabled = !isLoading,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(18.dp)
                     ) {
-                        GoogleLogoIcon(modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Continue with Google",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            GoogleLogoIcon(modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Continue with Google",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
 
-                    // Demo / Guest Login for Instant Testing
-                    GlassButton(
-                        onClick = {
-                            isLoading = true
-                            errorMessage = null
-                            scope.launch {
-                                val result = authManager.signInAsGuest(displayName = "Eco Collector", role = "collector")
-                                isLoading = false
-                                result.onSuccess { user ->
-                                    onLoginSuccess(user)
-                                }.onFailure { error ->
-                                    errorMessage = error.localizedMessage
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                        enabled = !isLoading,
-                        shape = RoundedCornerShape(16.dp)
+                    // Demo Guest Access Buttons
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Explore as Demo Guest",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
+                            text = "GOOGLE TESTER QUICK DEMO ACCESS",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            GlassButton(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    isLoading = true
+                                    errorMessage = null
+                                    scope.launch {
+                                        val result = authManager.signInAsDemoUser("collector")
+                                        isLoading = false
+                                        result.onSuccess { user ->
+                                            onLoginSuccess(user)
+                                        }.onFailure { error ->
+                                            errorMessage = error.localizedMessage
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                enabled = !isLoading,
+                                shape = RoundedCornerShape(18.dp)
+                            ) {
+                                Text(
+                                    text = "Demo Collector",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            GlassButton(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    isLoading = true
+                                    errorMessage = null
+                                    scope.launch {
+                                        val result = authManager.signInAsDemoUser("recycler")
+                                        isLoading = false
+                                        result.onSuccess { user ->
+                                            onLoginSuccess(user)
+                                        }.onFailure { error ->
+                                            errorMessage = error.localizedMessage
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                enabled = !isLoading,
+                                shape = RoundedCornerShape(18.dp)
+                            ) {
+                                Text(
+                                    text = "Demo Recycler",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -395,7 +498,181 @@ fun LoginScreen(
                     modifier = Modifier.clickable { onNavigateToSignup() }
                 )
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Trust highlights pill row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TrustBadge("🌱 Zero Landfill")
+                TrustBadge("⚡ Instant Escrow")
+                TrustBadge("🤖 AI Valuation")
+            }
         }
+    }
+
+    // Forgot Password Reset Dialog
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isSendingResetEmail) showForgotPasswordDialog = false },
+            title = {
+                Text("Reset Password", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Enter your registered email address below. We'll send you a password reset link so you can set a password for your account.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    GlassTextField(
+                        value = forgotPasswordEmail,
+                        onValueChange = { forgotPasswordEmail = it },
+                        label = "Email Address",
+                        placeholder = "name@domain.com"
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (forgotPasswordEmail.isBlank()) {
+                            Toast.makeText(context, "Please enter an email address", Toast.LENGTH_SHORT).show()
+                            return@TextButton
+                        }
+                        isSendingResetEmail = true
+                        scope.launch {
+                            val res = authManager.sendPasswordResetEmail(forgotPasswordEmail)
+                            isSendingResetEmail = false
+                            showForgotPasswordDialog = false
+                            res.onSuccess {
+                                Toast.makeText(
+                                    context,
+                                    "Password reset link sent to $forgotPasswordEmail! Please check your inbox.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }.onFailure { err ->
+                                Toast.makeText(
+                                    context,
+                                    err.localizedMessage ?: "Failed to send reset email.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    },
+                    enabled = !isSendingResetEmail
+                ) {
+                    Text("Send Reset Link", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showForgotPasswordDialog = false },
+                    enabled = !isSendingResetEmail
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Google Sign-In Recycler Facility Info Modal
+    if (showGoogleRecyclerDialog && pendingGoogleUser != null) {
+        AlertDialog(
+            onDismissRequest = { /* Force completion */ },
+            title = {
+                Text("Complete Recycler Registration", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Please provide your processing facility details to complete your Recycler account.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    GlassTextField(
+                        value = companyName,
+                        onValueChange = { companyName = it },
+                        label = "Company / Facility Name",
+                        placeholder = "e.g. Green Recycling Yard"
+                    )
+                    GlassTextField(
+                        value = facilityLocation,
+                        onValueChange = { facilityLocation = it },
+                        label = "Facility Location",
+                        placeholder = "e.g. Mumbai, Maharashtra"
+                    )
+                    GlassTextField(
+                        value = acceptedMaterials,
+                        onValueChange = { acceptedMaterials = it },
+                        label = "Accepted E-Waste Types",
+                        placeholder = "e.g. PCB,Batteries,Mobile,Cables"
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            database.recyclerDao().insertRecycler(
+                                RecyclerEntity(
+                                    name = companyName.trim().ifEmpty { pendingGoogleUser!!.displayName },
+                                    location = facilityLocation.trim().ifEmpty { "Local Area" },
+                                    latitude = 20.5937,
+                                    longitude = 78.9629,
+                                    materials = acceptedMaterials.trim().ifEmpty { "PCB,Batteries,Mobile,Cables" },
+                                    pricePerKg = 500,
+                                    authorized = true
+                                )
+                            )
+                            showGoogleRecyclerDialog = false
+                            onLoginSuccess(pendingGoogleUser!!)
+                        }
+                    },
+                    enabled = companyName.isNotBlank() && facilityLocation.isNotBlank()
+                ) {
+                    Text("Save & Complete", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    scope.launch {
+                        authManager.logout() // Cancel login since they refused to provide info
+                        showGoogleRecyclerDialog = false 
+                    }
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun TrustBadge(text: String) {
+    Box(
+        modifier = Modifier
+            .liquidGlass(
+                shape = CircleShape,
+                blurRadius = 8.dp,
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                borderAlpha = 0.25f,
+                elevation = 0.dp
+            )
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -451,4 +728,3 @@ fun GoogleLogoIcon(modifier: Modifier = Modifier) {
         )
     }
 }
-

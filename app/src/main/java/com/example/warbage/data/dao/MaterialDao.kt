@@ -21,4 +21,13 @@ interface MaterialDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(materials: List<MaterialEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMaterial(material: MaterialEntity)
+
+    @androidx.room.Update
+    suspend fun updateMaterial(material: MaterialEntity)
+
+    @Query("SELECT MAX(id) FROM materials")
+    suspend fun getMaxId(): Int?
 }

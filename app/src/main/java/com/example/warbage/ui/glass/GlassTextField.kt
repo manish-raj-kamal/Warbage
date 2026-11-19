@@ -15,10 +15,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 /**
- * Translucent Liquid Glass styled OutlinedTextField
+ * Translucent Liquid Glass styled OutlinedTextField with precision focus borders
  */
 @Composable
 fun GlassTextField(
@@ -30,6 +31,7 @@ fun GlassTextField(
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingIcon: (@Composable () -> Unit)? = null,
     isError: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
@@ -47,30 +49,32 @@ fun GlassTextField(
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
         isError = isError,
+        visualTransformation = visualTransformation,
         singleLine = singleLine,
         maxLines = maxLines,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = if (isDark) Color(0x351B2E24) else Color(0x80FFFFFF),
-            unfocusedContainerColor = if (isDark) Color(0x22132019) else Color(0x55FFFFFF),
+            focusedContainerColor = if (isDark) Color(0x401E293B) else Color(0x99FFFFFF),
+            unfocusedContainerColor = if (isDark) Color(0x280F172A) else Color(0x70FFFFFF),
             focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = if (isDark) Color(0x40FFFFFF) else Color(0x302E7D32),
+            unfocusedBorderColor = if (isDark) Color(0x33475569) else Color(0x3394A3B8),
             focusedLabelColor = MaterialTheme.colorScheme.primary,
-            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
         ),
         modifier = modifier
             .fillMaxWidth()
             .liquidGlass(
-                shape = RoundedCornerShape(16.dp),
-                blurRadius = 16.dp,
-                lensHeight = 10.dp,
-                lensAmount = 12.dp,
-                borderAlpha = if (isFocused) 0.6f else 0.25f,
+                shape = RoundedCornerShape(18.dp),
+                blurRadius = 18.dp,
+                lensHeight = 12.dp,
+                lensAmount = 14.dp,
+                borderAlpha = if (isFocused) 0.65f else 0.25f,
                 elevation = if (isFocused) 4.dp else 1.dp
             )
     )
 }
-

@@ -55,7 +55,7 @@ fun GlassButton(
     val buttonTint = tint ?: if (isDark) {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
     } else {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
     }
 
     Box(

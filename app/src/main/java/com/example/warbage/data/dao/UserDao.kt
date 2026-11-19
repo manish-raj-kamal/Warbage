@@ -12,6 +12,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE uid = :uid LIMIT 1")
     suspend fun getUserSync(uid: String): UserEntity?
 
+    @Query("SELECT * FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1")
+    suspend fun getUserByEmail(email: String): UserEntity?
+
     @Query("SELECT * FROM users ORDER BY createdAt DESC LIMIT 1")
     fun getLastActiveUser(): Flow<UserEntity?>
 

@@ -38,11 +38,23 @@ class AuthManager(
      */
     suspend fun loginWithEmail(email: String, password: String): Result<UserEntity> {
         return try {
-            val authResult = auth.signInWithEmailAndPassword(email.trim(), password).await()
+            val trimmedEmail = email.trim()
+            val existingByEmail = userRepository.getUserByEmail(trimmedEmail)
+
+            val authResult = try {
+                auth.signInWithEmailAndPassword(trimmedEmail, password).await()
+            } catch (e: Exception) {
+                if (existingByEmail?.authProvider == "google") {
+                    throw Exception("This account was created via Google Sign-In. Please sign in with Google or use 'Forgot Password' to set an email password.")
+                } else {
+                    throw e
+                }
+            }
+
             val firebaseUser = authResult.user ?: throw Exception("User authentication failed.")
 
             // Check if user already exists in local DB to retain role
-            val existing = userRepository.getUserSync(firebaseUser.uid)
+            val existing = userRepository.getUserSync(firebaseUser.uid) ?: existingByEmail
             val role = existing?.role ?: "collector"
 
             val userEntity = UserEntity(
@@ -52,7 +64,7 @@ class AuthManager(
                 role = role,
                 phoneNumber = firebaseUser.phoneNumber ?: existing?.phoneNumber ?: "",
                 photoUrl = firebaseUser.photoUrl?.toString() ?: existing?.photoUrl ?: "",
-                authProvider = "email"
+                authProvider = existing?.authProvider ?: "email"
             )
 
             userRepository.saveUser(userEntity)
@@ -72,18 +84,43 @@ class AuthManager(
         role: String
     ): Result<UserEntity> {
         return try {
-            val authResult = auth.createUserWithEmailAndPassword(email.trim(), password).await()
+            val trimmedEmail = email.trim()
+            
+            // Check if account already exists locally
+            val existingUser = userRepository.getUserByEmail(trimmedEmail)
+            if (existingUser != null) {
+                if (existingUser.authProvider == "google") {
+                    throw Exception("An account with this email already exists via Google Sign-In. Please sign in with Google or reset your password.")
+                } else {
+                    throw Exception("An account with this email address already exists. Please log in using your password.")
+                }
+            }
+
+            val authResult = try {
+                auth.createUserWithEmailAndPassword(trimmedEmail, password).await()
+            } catch (e: Exception) {
+                if (e.message?.contains("already in use", ignoreCase = true) == true ||
+                    e is com.google.firebase.auth.FirebaseAuthUserCollisionException
+                ) {
+                    throw Exception("An account with this email address already exists. Please log in instead.")
+                } else {
+                    throw e
+                }
+            }
+
             val firebaseUser = authResult.user ?: throw Exception("User registration failed.")
 
             // Update Firebase Profile display name
-            val profileUpdates = UserProfileChangeRequest.Builder()
-                .setDisplayName(displayName)
-                .build()
-            firebaseUser.updateProfile(profileUpdates).await()
+            try {
+                val profileUpdates = UserProfileChangeRequest.Builder()
+                    .setDisplayName(displayName)
+                    .build()
+                firebaseUser.updateProfile(profileUpdates).await()
+            } catch (_: Exception) {}
 
             val userEntity = UserEntity(
                 uid = firebaseUser.uid,
-                email = firebaseUser.email ?: email,
+                email = firebaseUser.email ?: trimmedEmail,
                 displayName = displayName,
                 role = role,
                 phoneNumber = "",
@@ -98,7 +135,7 @@ class AuthManager(
                 val backendUser = BackendUser(
                     userId = firebaseUser.uid,
                     name = displayName,
-                    email = firebaseUser.email ?: email,
+                    email = firebaseUser.email ?: trimmedEmail,
                     phone = "",
                     role = role.uppercase(),
                     authProvider = "email"
@@ -121,15 +158,28 @@ class AuthManager(
      */
     suspend fun signInWithGoogle(
         context: Context,
-        webClientId: String,
+        webClientId: String = "",
         role: String = "collector"
     ): Result<UserEntity> {
         return try {
+            val resolvedWebClientId = if (webClientId.isNotBlank()) {
+                webClientId
+            } else {
+                try {
+                    val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+                    if (resId != 0) context.getString(resId) else ""
+                } catch (_: Exception) { "" }
+            }
+
+            if (resolvedWebClientId.isBlank() || resolvedWebClientId.contains("placeholder")) {
+                return Result.failure(Exception("Google Sign-In is not configured yet. Download your real google-services.json from Firebase Console."))
+            }
+
             val credentialManager = CredentialManager.create(context)
 
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setFilterByAuthorizedAccounts(false)
-                .setServerClientId(webClientId)
+                .setServerClientId(resolvedWebClientId)
                 .setAutoSelectEnabled(false)
                 .build()
 
@@ -197,25 +247,137 @@ class AuthManager(
     }
 
     /**
+     * Demo accounts for Google Play testers.
+     */
+    suspend fun signInAsDemoUser(role: String): Result<UserEntity> {
+        return try {
+            val isRecycler = role.lowercase() == "recycler"
+            val demoId = if (isRecycler) "demo_recycler_id" else "demo_collector_id"
+            val email = if (isRecycler) "demo.recycler@warbage.eco" else "demo.collector@warbage.eco"
+            val name = if (isRecycler) "Demo Recycler" else "Demo Collector"
+
+            val userEntity = UserEntity(
+                uid = demoId,
+                email = email,
+                displayName = name,
+                role = if (isRecycler) "recycler" else "collector",
+                authProvider = "demo"
+            )
+            RetrofitClient.demoUserId = demoId
+            userRepository.saveUser(userEntity)
+            
+            // Sync demo user to backend
+            try {
+                val backendUser = BackendUser(
+                    userId = demoId,
+                    name = name,
+                    email = email,
+                    phone = "",
+                    role = userEntity.role.uppercase(),
+                    authProvider = "demo"
+                )
+                RetrofitClient.api.createUser(backendUser)
+            } catch (e: Exception) {
+                android.util.Log.e("AuthManager", "Backend sync failed for demo user", e)
+            }
+            
+            Result.success(userEntity)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Quick Guest / Demo login option for immediate testing even when offline or before Firebase is configured.
      */
     suspend fun signInAsGuest(
         displayName: String = "Eco Collector",
         role: String = "collector"
     ): Result<UserEntity> {
+        return signInAsDemoUser(role)
+    }
+
+    /**
+     * Request Account Deletion with a 7-day grace period.
+     */
+    suspend fun requestAccountDeletion(uid: String): Result<UserEntity> {
         return try {
-            val guestId = "guest_${UUID.randomUUID().toString().take(8)}"
-            val userEntity = UserEntity(
-                uid = guestId,
-                email = "guest@warbage.eco",
-                displayName = displayName,
-                role = role,
-                authProvider = "guest"
+            val existing = userRepository.getUserSync(uid) ?: throw Exception("User not found.")
+            val updated = existing.copy(
+                isPendingDeletion = true,
+                deletionRequestedAt = System.currentTimeMillis()
             )
-            userRepository.saveUser(userEntity)
-            Result.success(userEntity)
+            userRepository.saveUser(updated)
+            Result.success(updated)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Cancel pending Account Deletion.
+     */
+    suspend fun cancelAccountDeletion(uid: String): Result<UserEntity> {
+        return try {
+            val existing = userRepository.getUserSync(uid) ?: throw Exception("User not found.")
+            val updated = existing.copy(
+                isPendingDeletion = false,
+                deletionRequestedAt = 0L
+            )
+            userRepository.saveUser(updated)
+            Result.success(updated)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Permanently purge user account and all associated data from MongoDB backend, Firebase, and local storage.
+     */
+    suspend fun permanentlyDeleteAccount(uid: String): Result<Unit> {
+        return try {
+            // 1. Purge user and unfulfilled lots from Backend MongoDB
+            try {
+                RetrofitClient.api.deleteUser(uid)
+            } catch (e: Exception) {
+                android.util.Log.e("AuthManager", "Backend account purge error: ${e.message}")
+            }
+
+            // 2. Delete user from Firebase Auth
+            currentFirebaseUser?.let { fbUser ->
+                if (fbUser.uid == uid) {
+                    try {
+                        fbUser.delete().await()
+                    } catch (e: Exception) {
+                        android.util.Log.e("AuthManager", "Firebase Auth account deletion error: ${e.message}")
+                    }
+                }
+            }
+
+            // 3. Clear local session & DB
+            logout()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Check if 7 days have passed since deletion request. If so, purge user completely.
+     */
+    suspend fun checkAndDeleteExpiredAccount(uid: String): Boolean {
+        return try {
+            val user = userRepository.getUserSync(uid) ?: return false
+            if (user.isPendingDeletion && user.deletionRequestedAt > 0) {
+                val sevenDaysMs = 7L * 24 * 60 * 60 * 1000
+                if (System.currentTimeMillis() - user.deletionRequestedAt >= sevenDaysMs) {
+                    permanentlyDeleteAccount(uid)
+                    return true
+                }
+            }
+            false
+        } catch (e: Exception) {
+            false
         }
     }
 
@@ -253,9 +415,24 @@ class AuthManager(
     }
 
     /**
+     * Send password reset email link via Firebase Auth.
+     */
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            val trimmedEmail = email.trim()
+            if (trimmedEmail.isBlank()) throw Exception("Please enter your email address.")
+            auth.sendPasswordResetEmail(trimmedEmail).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Sign out user from Firebase and clear active session.
      */
     suspend fun logout() {
+        RetrofitClient.demoUserId = null
         try {
             auth.signOut()
         } catch (_: Exception) {}

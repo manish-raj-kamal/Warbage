@@ -6,7 +6,6 @@ import com.example.warbage.ui.screens.AiResult
 import com.google.ai.edge.litert.Accelerator
 import com.google.ai.edge.litert.CompiledModel
 import com.google.ai.edge.litert.Environment
-import com.google.ai.edge.litert.LiteRtException
 import com.google.ai.edge.litert.TensorBuffer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,16 +16,10 @@ import kotlinx.coroutines.withContext
 class MaterialClassifier(context: Context) : AutoCloseable {
 
     private val labels = mutableListOf<String>()
-
     private val environment by lazy { Environment.create() }
     private val model: CompiledModel
     private val inputs = mutableListOf<TensorBuffer>()
     private val outputs = mutableListOf<TensorBuffer>()
-
-    // Use default CPU accelerator for simplicity, can be updated later if needed.
-    // The placeholder model takes 224x224x3 float or uint8 input.
-    // Assuming our train script generates a float32 model by default (no quantization).
-    // But the mobilenet quant model we downloaded uses uint8. Let's handle it gracefully.
 
     init {
         // Load labels
@@ -50,8 +43,6 @@ class MaterialClassifier(context: Context) : AutoCloseable {
         try {
             inputs += model.createInputBuffers()
             outputs += model.createOutputBuffers()
-            // We'll skip warmup inference here since we might have uint8 or float32 model and we are doing a quick init.
-            // A real app should do a warmup inference.
         } catch (e: Exception) {
             close()
             throw e
@@ -64,33 +55,23 @@ class MaterialClassifier(context: Context) : AutoCloseable {
      */
     suspend fun classify(bitmap: Bitmap): AiResult = withContext(Dispatchers.Default) {
         val inputSize = 224
-        val scaled = Bitmap.createScaledBitmap(bitmap, inputSize, inputSize, true).copy(Bitmap.Config.ARGB_8888, false)
+        val scaled = Bitmap.createScaledBitmap(bitmap, inputSize, inputSize, true)
+            .copy(Bitmap.Config.ARGB_8888, false)
         val pixels = IntArray(inputSize * inputSize)
         scaled.getPixels(pixels, 0, inputSize, 0, 0, inputSize, inputSize)
 
-        // Assuming our placeholder mobilenet quant model expects UINT8 [1, 224, 224, 3]
-        // If our real model is Float, this code will need to writeFloat instead of writeInt8.
-        // We will try writing Float array if it's float, else Int8.
-
-        // Let's check the buffer type
-        val isFloat = try {
-            inputs[0].writeFloat(FloatArray(1))
-            true
-        } catch (e: Exception) {
-            false
+        val floatInput = FloatArray(inputSize * inputSize * 3)
+        pixels.forEachIndexed { i, p ->
+            floatInput[i * 3] = (p shr 16 and 0xFF).toFloat()
+            floatInput[i * 3 + 1] = (p shr 8 and 0xFF).toFloat()
+            floatInput[i * 3 + 2] = (p and 0xFF).toFloat()
         }
 
-        if (isFloat) {
-            val floatInput = FloatArray(inputSize * inputSize * 3)
-            pixels.forEachIndexed { i, p ->
-                // Do NOT normalize! Pass raw 0-255 values, identical to app.py logic
-                floatInput[i * 3] = (p shr 16 and 0xFF).toFloat()
-                floatInput[i * 3 + 1] = (p shr 8 and 0xFF).toFloat()
-                floatInput[i * 3 + 2] = (p and 0xFF).toFloat()
-            }
+        var isFloat = true
+        try {
             inputs[0].writeFloat(floatInput)
-        } else {
-            // Uint8 expects ByteArray
+        } catch (_: Exception) {
+            isFloat = false
             val byteInput = ByteArray(inputSize * inputSize * 3)
             pixels.forEachIndexed { i, p ->
                 byteInput[i * 3] = (p shr 16 and 0xFF).toByte()
@@ -103,14 +84,22 @@ class MaterialClassifier(context: Context) : AutoCloseable {
         model.run(inputs, outputs)
 
         val floatOutput = if (isFloat) {
-            outputs[0].readFloat()
-        } else {
-            val byteOut = outputs[0].readInt8()
-            val floats = FloatArray(byteOut.size)
-            for (i in byteOut.indices) {
-                floats[i] = (byteOut[i].toInt() and 0xFF) / 255.0f
+            try {
+                outputs[0].readFloat()
+            } catch (_: Exception) {
+                FloatArray(labels.size)
             }
-            floats
+        } else {
+            try {
+                val byteOut = outputs[0].readInt8()
+                val floats = FloatArray(byteOut.size)
+                for (i in byteOut.indices) {
+                    floats[i] = (byteOut[i].toInt() and 0xFF) / 255.0f
+                }
+                floats
+            } catch (_: Exception) {
+                FloatArray(labels.size)
+            }
         }
 
         var maxIdx = 0
@@ -149,7 +138,10 @@ class MaterialClassifier(context: Context) : AutoCloseable {
     }
 
     override fun close() {
-        (inputs + outputs).forEach { it.close() }
-        model.close()
+        try {
+            (inputs + outputs).forEach { it.close() }
+            model.close()
+        } catch (_: Exception) {
+        }
     }
 }

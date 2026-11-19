@@ -3,20 +3,26 @@ package com.example.warbage.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.warbage.data.WarbageDatabase
 import com.example.warbage.ui.components.RecyclerCard
+import com.example.warbage.ui.glass.GlassCard
 import com.example.warbage.ui.glass.GlassIconButton
 import com.example.warbage.ui.glass.LiquidTopAppBar
+import com.example.warbage.ui.theme.EmeraldBright
 
 @Composable
 fun RecyclerListScreen(
@@ -31,7 +37,7 @@ fun RecyclerListScreen(
         containerColor = Color.Transparent,
         topBar = {
             LiquidTopAppBar(
-                title = { Text("Select Recycler", fontWeight = FontWeight.Bold) },
+                title = { Text("Select Certified Recycler", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     GlassIconButton(
                         onClick = onBack,
@@ -51,13 +57,41 @@ fun RecyclerListScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
-                Text(
-                    text = "Choose a certified recycler for your lot",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 2.dp)
-                )
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = 2.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Verified,
+                            contentDescription = null,
+                            tint = EmeraldBright,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Verified Recycler Network",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "All listed facilities are ISO-14001 & R2 certified for ethical e-waste recycling.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             }
+
             items(recyclers, key = { it.id }) { recycler ->
                 RecyclerCard(
                     recycler = recycler,

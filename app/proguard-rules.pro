@@ -1,0 +1,52 @@
+# ====================================================================
+# Warbage R8 / ProGuard Keep Rules for Production Release
+# ====================================================================
+
+# Keep Room database, entities and DAOs
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Dao interface * { *; }
+-keep @androidx.room.Entity class * { *; }
+-keep class com.example.warbage.data.entity.** { *; }
+-keep class com.example.warbage.data.dao.** { *; }
+-keep class com.example.warbage.data.WarbageDatabase** { *; }
+-keepclassmembers class * {
+    @androidx.room.PrimaryKey *;
+    @androidx.room.ColumnInfo *;
+}
+
+# Keep Retrofit & Gson data transfer models
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.example.warbage.network.** { *; }
+-keepclassmembers class com.example.warbage.network.** { *; }
+-keepclassmembers enum * { *; }
+
+# Retrofit interfaces
+-keepclassmembers,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+-dontnote retrofit2.Platform
+-dontwarn retrofit2.Platform$Java8
+-dontwarn okhttp3.**
+-dontwarn okio.**
+
+# Google Identity, Credential Manager, & Firebase Auth
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+-keep class androidx.credentials.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+
+# LiteRT / TensorFlow Lite
+-keep class com.google.ai.edge.litert.** { *; }
+-keep class org.tensorflow.lite.** { *; }
+-dontwarn org.tensorflow.lite.**
+
+# Kotlin Coroutines & Reflection
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-keepclassmembernames class kotlinx.coroutines.** {
+    volatile <fields>;
+}
+

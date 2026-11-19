@@ -10,11 +10,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -30,9 +33,16 @@ import com.example.warbage.ui.glass.GlassTextField
 import com.example.warbage.ui.glass.LiquidSegmentedTabs
 import com.example.warbage.ui.glass.LiquidTopAppBar
 import com.example.warbage.ui.glass.liquidGlass
+import com.example.warbage.ui.theme.CyanBright
+import com.example.warbage.ui.theme.EmeraldBright
+import com.example.warbage.ui.theme.EmeraldNeon
+import com.example.warbage.ui.theme.GoldBright
+import com.example.warbage.ui.theme.VioletBright
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+
+import com.example.warbage.data.entity.UpgradeRequestEntity
 
 @Composable
 fun ProfileScreen(
@@ -40,30 +50,42 @@ fun ProfileScreen(
     authManager: AuthManager,
     onBack: () -> Unit,
     onLogout: () -> Unit,
-    onRoleChanged: (String) -> Unit
+    onRoleChanged: (String) -> Unit // Keeping it to not break calls, though it's unused
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     val user by database.userDao().getLastActiveUser().collectAsState(initial = null)
-    val lots by database.lotDao().getAllLots().collectAsState(initial = emptyList())
-    val requests by database.requestDao().getAllRequests().collectAsState(initial = emptyList())
+    val lots by database.lotDao().getLotsByUser(user?.uid ?: "").collectAsState(initial = emptyList())
+    val requests by database.requestDao().getRequestsByUser(user?.uid ?: "").collectAsState(initial = emptyList())
 
     var showEditDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf("") }
     var editPhone by remember { mutableStateOf("") }
     var showLogoutConfirm by remember { mutableStateOf(false) }
-
-    val roles = listOf("Collector", "Recycler")
-    val currentRoleIndex = if (user?.role?.lowercase() == "recycler") 1 else 0
+    var showDeleteAccountConfirm by remember { mutableStateOf(false) }
 
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+
+    var showUpgradeDialog by remember { mutableStateOf(false) }
+    var upgradeRecyclerName by remember { mutableStateOf("") }
+    var upgradeLocation by remember { mutableStateOf("") }
+
+    LaunchedEffect(user?.uid) {
+        user?.uid?.let { uid ->
+            val wasDeleted = authManager.checkAndDeleteExpiredAccount(uid)
+            if (wasDeleted) {
+                Toast.makeText(context, "Account has been permanently deleted after 7 days.", Toast.LENGTH_LONG).show()
+                onLogout()
+            }
+        }
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
             LiquidTopAppBar(
-                title = { Text("User Profile", fontWeight = FontWeight.Bold) },
+                title = { Text("Eco Passport & Profile", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     GlassIconButton(
                         onClick = onBack,
@@ -83,7 +105,7 @@ fun ProfileScreen(
                             editPhone = user?.phoneNumber ?: ""
                             showEditDialog = true
                         },
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                     ) {
                         Icon(
                             Icons.Default.Edit,
@@ -104,7 +126,7 @@ fun ProfileScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Hero Profile Glass Card
+            // Hero Profile Card
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
@@ -116,67 +138,77 @@ fun ProfileScreen(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Avatar Orb
+                    // Avatar Orb with Glowing Perimeter Ring
                     Box(
                         modifier = Modifier
-                            .size(86.dp)
+                            .size(92.dp)
                             .liquidGlass(
                                 shape = CircleShape,
                                 blurRadius = 20.dp,
                                 lensHeight = 16.dp,
                                 lensAmount = 18.dp,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                                borderAlpha = 0.6f,
-                                elevation = 4.dp
+                                tint = EmeraldBright.copy(alpha = 0.22f),
+                                borderAlpha = 0.65f,
+                                elevation = 6.dp
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         val initial = user?.displayName?.firstOrNull()?.uppercase() ?: "U"
                         Text(
                             text = initial,
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = EmeraldBright
                         )
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Text(
-                        text = user?.displayName ?: "User",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = user?.displayName ?: "Eco Recycler",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Default.Verified,
+                            contentDescription = "Verified Member",
+                            tint = EmeraldBright,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = user?.email ?: "No email",
+                        text = user?.email ?: "member@warbage.earth",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Provider Tag
+                    // Tags row
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(
                             modifier = Modifier
                                 .liquidGlass(
                                     shape = CircleShape,
                                     blurRadius = 10.dp,
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                                    borderAlpha = 0.4f,
+                                    tint = EmeraldBright.copy(alpha = 0.16f),
+                                    borderAlpha = 0.45f,
                                     elevation = 1.dp
                                 )
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                                .padding(horizontal = 12.dp, vertical = 5.dp)
                         ) {
                             Text(
-                                text = "Auth: ${(user?.authProvider ?: "email").uppercase()}",
-                                style = MaterialTheme.typography.labelSmall,
+                                text = "ROLE: ${(user?.role ?: "collector").uppercase()}",
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = EmeraldBright,
+                                letterSpacing = 0.5.sp
                             )
                         }
 
@@ -185,27 +217,73 @@ fun ProfileScreen(
                                 .liquidGlass(
                                     shape = CircleShape,
                                     blurRadius = 10.dp,
-                                    tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f),
-                                    borderAlpha = 0.4f,
+                                    tint = CyanBright.copy(alpha = 0.16f),
+                                    borderAlpha = 0.45f,
                                     elevation = 1.dp
                                 )
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                                .padding(horizontal = 12.dp, vertical = 5.dp)
                         ) {
                             Text(
-                                text = "Role: ${(user?.role ?: "collector").replaceFirstChar { it.uppercase() }}",
-                                style = MaterialTheme.typography.labelSmall,
+                                text = "AUTH: ${(user?.authProvider ?: "email").uppercase()}",
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.secondary
+                                color = CyanBright,
+                                letterSpacing = 0.5.sp
                             )
                         }
                     }
                 }
             }
 
-            // Role Switcher Card
+            if (user?.role?.lowercase() == "collector") {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = 4.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
+                    ) {
+                        Text(
+                            text = "Recycler Program",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Apply to become a licensed recycler to receive e-waste directly from users.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        GlassButton(
+                            onClick = { showUpgradeDialog = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            tint = EmeraldBright.copy(alpha = 0.2f)
+                        ) {
+                            Icon(
+                                Icons.Default.Factory,
+                                contentDescription = null,
+                                tint = EmeraldBright
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Upgrade as Recycler",
+                                color = EmeraldBright,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Activity Impact Overview
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(24.dp),
                 elevation = 4.dp
             ) {
                 Column(
@@ -213,56 +291,92 @@ fun ProfileScreen(
                         .fillMaxWidth()
                         .padding(18.dp)
                 ) {
-                    Text(
-                        text = "Active Workspace Mode",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Switch between collecting e-waste lots and managing recycler facility requests.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    LiquidSegmentedTabs(
-                        tabs = roles,
-                        selectedTabIndex = currentRoleIndex,
-                        onTabSelected = { newIndex ->
-                            val newRole = if (newIndex == 0) "collector" else "recycler"
-                            user?.let { u ->
-                                scope.launch {
-                                    authManager.updateProfile(
-                                        uid = u.uid,
-                                        displayName = u.displayName,
-                                        phoneNumber = u.phoneNumber,
-                                        role = newRole
-                                    )
-                                    onRoleChanged(newRole)
-                                    Toast.makeText(context, "Switched to ${roles[newIndex]} mode", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    if (user?.role?.lowercase() == "collector") {
+                        Text(
+                            text = "Sustainability & Trading Score",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            ImpactStatBox(
+                                icon = Icons.Default.Inventory2,
+                                title = "Lots Created",
+                                value = "${lots.size}",
+                                accent = EmeraldBright,
+                                modifier = Modifier.weight(1f)
+                            )
+                            ImpactStatBox(
+                                icon = Icons.AutoMirrored.Filled.Send,
+                                title = "Requests",
+                                value = "${requests.size}",
+                                accent = CyanBright,
+                                modifier = Modifier.weight(1f)
+                            )
+                            ImpactStatBox(
+                                icon = Icons.Default.Verified,
+                                title = "Completed",
+                                value = "${requests.count { it.status == "accepted" || it.status == "completed" }}",
+                                accent = GoldBright,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "Facility Processing Impact",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            ImpactStatBox(
+                                icon = Icons.AutoMirrored.Filled.Send,
+                                title = "Pending Intake",
+                                value = "${requests.count { it.status == "pending" }}",
+                                accent = GoldBright,
+                                modifier = Modifier.weight(1f)
+                            )
+                            ImpactStatBox(
+                                icon = Icons.Default.CheckCircle,
+                                title = "Accepted",
+                                value = "${requests.count { it.status == "accepted" }}",
+                                accent = CyanBright,
+                                modifier = Modifier.weight(1f)
+                            )
+                            ImpactStatBox(
+                                icon = Icons.Default.Verified,
+                                title = "Processed",
+                                value = "${requests.count { it.status == "completed" }}",
+                                accent = EmeraldBright,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
             }
 
             // Contact & Account Info Card
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(24.dp),
                 elevation = 4.dp
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        text = "Account Information",
+                        text = "Account Security & Credentials",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -270,66 +384,93 @@ fun ProfileScreen(
 
                     ProfileItemRow(
                         icon = Icons.Default.Phone,
-                        label = "Phone Number",
-                        value = if (user?.phoneNumber.isNullOrBlank()) "Not provided" else user!!.phoneNumber
+                        label = "Phone Contact",
+                        value = if (user?.phoneNumber.isNullOrBlank()) "Add phone number" else user!!.phoneNumber
                     )
 
                     ProfileItemRow(
                         icon = Icons.Default.Badge,
-                        label = "User UID",
-                        value = user?.uid?.take(16)?.let { "$it..." } ?: "Local Session"
+                        label = "Account Identifier",
+                        value = user?.uid?.take(14)?.let { "$it..." } ?: "Verified Local"
                     )
 
                     ProfileItemRow(
                         icon = Icons.Default.CalendarToday,
-                        label = "Member Since",
-                        value = user?.createdAt?.let { dateFormat.format(Date(it)) } ?: "Recent"
+                        label = "Verified Since",
+                        value = user?.createdAt?.let { dateFormat.format(Date(it)) } ?: "Active Member"
                     )
                 }
             }
 
-            // Activity Impact Overview
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                elevation = 4.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp)
+            // Pending Deletion Banner if user requested deletion
+            if (user?.isPendingDeletion == true) {
+                val sevenDaysMs = 7L * 24 * 60 * 60 * 1000
+                val elapsed = System.currentTimeMillis() - (user?.deletionRequestedAt ?: 0L)
+                val remainingMs = maxOf(0L, sevenDaysMs - elapsed)
+                val remainingDays = remainingMs / (1000 * 60 * 60 * 24)
+                val remainingHours = (remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = 6.dp
                 ) {
-                    Text(
-                        text = "Recycling Impact",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
                     ) {
-                        ImpactStatBox(
-                            title = "Lots Created",
-                            value = "${lots.size}",
-                            modifier = Modifier.weight(1f)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Account Scheduled for Deletion",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Your account will be permanently wiped from the database in $remainingDays day(s) and $remainingHours hour(s). You can cancel this request anytime before the countdown ends.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        ImpactStatBox(
-                            title = "Requests",
-                            value = "${requests.size}",
-                            modifier = Modifier.weight(1f)
-                        )
-                        ImpactStatBox(
-                            title = "Accepted",
-                            value = "${requests.count { it.status == "accepted" || it.status == "completed" }}",
-                            modifier = Modifier.weight(1f)
-                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        GlassButton(
+                            onClick = {
+                                user?.let { u ->
+                                    scope.launch {
+                                        authManager.cancelAccountDeletion(u.uid)
+                                        Toast.makeText(context, "Account deletion cancelled successfully.", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            tint = EmeraldBright.copy(alpha = 0.2f)
+                        ) {
+                            Icon(
+                                Icons.Default.Restore,
+                                contentDescription = null,
+                                tint = EmeraldBright
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Cancel Account Deletion",
+                                color = EmeraldBright,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Logout Button
             GlassButton(
@@ -337,8 +478,8 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.22f),
-                shape = RoundedCornerShape(16.dp)
+                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.25f),
+                shape = RoundedCornerShape(18.dp)
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.Logout,
@@ -348,11 +489,37 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Log Out",
+                    text = "Sign Out from Warbage",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error
                 )
+            }
+
+            // Account Deletion Request Button
+            if (user?.isPendingDeletion != true) {
+                GlassButton(
+                    onClick = { showDeleteAccountConfirm = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Icon(
+                        Icons.Default.DeleteForever,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Request Account Deletion (7-Day Period)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
@@ -362,7 +529,7 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
             title = {
-                Text("Edit Profile", fontWeight = FontWeight.Bold)
+                Text("Edit Profile Details", fontWeight = FontWeight.Bold)
             },
             text = {
                 Column(
@@ -393,12 +560,12 @@ fun ProfileScreen(
                                     role = u.role
                                 )
                                 showEditDialog = false
-                                Toast.makeText(context, "Profile updated", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
                 ) {
-                    Text("Save", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("Save Changes", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
@@ -414,10 +581,10 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
             title = {
-                Text("Log Out", fontWeight = FontWeight.Bold)
+                Text("Sign Out", fontWeight = FontWeight.Bold)
             },
             text = {
-                Text("Are you sure you want to log out from WARbage?")
+                Text("Are you sure you want to sign out from your WARBAGE account?")
             },
             confirmButton = {
                 TextButton(
@@ -429,11 +596,132 @@ fun ProfileScreen(
                         }
                     }
                 ) {
-                    Text("Log Out", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                    Text("Sign Out", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Delete Account Confirmation Dialog
+    if (showDeleteAccountConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAccountConfirm = false },
+            title = {
+                Text("Schedule Account Deletion", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+            },
+            text = {
+                Text(
+                    "Your account will be scheduled for complete deletion from the database in 7 days.\n\n" +
+                    "During this 7-day period, you can log in or open your profile anytime to cancel the deletion request. " +
+                    "After 7 days, your account and all associated data will be permanently wiped.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            showDeleteAccountConfirm = false
+                            user?.let { u ->
+                                scope.launch {
+                                    authManager.permanentlyDeleteAccount(u.uid)
+                                    Toast.makeText(context, "Account permanently deleted.", Toast.LENGTH_LONG).show()
+                                    onLogout()
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Delete Now", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                    }
+                    TextButton(
+                        onClick = {
+                            showDeleteAccountConfirm = false
+                            user?.let { u ->
+                                scope.launch {
+                                    authManager.requestAccountDeletion(u.uid)
+                                    Toast.makeText(
+                                        context,
+                                        "Account deletion scheduled in 7 days.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Schedule (7 Days)")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAccountConfirm = false }) {
+                    Text("Keep Account")
+                }
+            }
+        )
+    }
+
+    // Upgrade Recycler Dialog
+    if (showUpgradeDialog) {
+        AlertDialog(
+            onDismissRequest = { showUpgradeDialog = false },
+            title = {
+                Text("Request Recycler License", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Submit a request to the app developer to upgrade your account to a Licensed Recycler.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    GlassTextField(
+                        value = upgradeRecyclerName,
+                        onValueChange = { upgradeRecyclerName = it },
+                        label = "Recycler Facility Name"
+                    )
+                    GlassTextField(
+                        value = upgradeLocation,
+                        onValueChange = { upgradeLocation = it },
+                        label = "Facility Location"
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        user?.let { u ->
+                            scope.launch {
+                                database.upgradeRequestDao().insertRequest(
+                                    UpgradeRequestEntity(
+                                        userId = u.uid,
+                                        recyclerName = upgradeRecyclerName,
+                                        location = upgradeLocation,
+                                        dateRequested = System.currentTimeMillis()
+                                    )
+                                )
+                                showUpgradeDialog = false
+                                Toast.makeText(
+                                    context,
+                                    "Request submitted successfully",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    },
+                    enabled = upgradeRecyclerName.isNotBlank() && upgradeLocation.isNotBlank()
+                ) {
+                    Text("Submit Request", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUpgradeDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -459,7 +747,7 @@ private fun ProfileItemRow(
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
@@ -477,36 +765,45 @@ private fun ProfileItemRow(
 
 @Composable
 private fun ImpactStatBox(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     value: String,
+    accent: Color,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .liquidGlass(
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 blurRadius = 10.dp,
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                tint = accent.copy(alpha = 0.14f),
                 borderAlpha = 0.35f,
-                elevation = 1.dp
+                elevation = 2.dp
             )
-            .padding(vertical = 12.dp, horizontal = 8.dp),
+            .padding(vertical = 14.dp, horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelSmall,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
-

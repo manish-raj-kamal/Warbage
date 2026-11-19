@@ -13,6 +13,8 @@ data class UserEntity(
     val phoneNumber: String = "",
     val photoUrl: String = "",
     val authProvider: String = "email", // "email", "google", "guest"
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val isPendingDeletion: Boolean = false,
+    val deletionRequestedAt: Long = 0L
 )
 

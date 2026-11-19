@@ -1,6 +1,5 @@
 package com.example.warbage.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -9,49 +8,67 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Green80,
-    onPrimary = Green30,
-    primaryContainer = Green30,
-    onPrimaryContainer = Green90,
-    secondary = Teal80,
-    onSecondary = Teal30,
-    secondaryContainer = Teal30,
-    onSecondaryContainer = Teal80,
-    tertiary = Amber80,
-    onTertiary = Amber30,
-    tertiaryContainer = Amber30,
-    onTertiaryContainer = Amber80,
-    background = Neutral10,
-    onBackground = Neutral90,
-    surface = Neutral10,
-    onSurface = Neutral90,
-    surfaceVariant = Neutral20,
-    onSurfaceVariant = Neutral90,
-    error = Error80,
-    onError = Color(0xFF690005)
+    primary = EmeraldNeon,
+    onPrimary = Color(0xFF032213),
+    primaryContainer = Color(0xFF064E3B),
+    onPrimaryContainer = EmeraldLight,
+    
+    secondary = CyanNeon,
+    onSecondary = Color(0xFF03222B),
+    secondaryContainer = Color(0xFF0E4A5C),
+    onSecondaryContainer = CyanLight,
+    
+    tertiary = VioletNeon,
+    onTertiary = Color(0xFF261047),
+    tertiaryContainer = Color(0xFF4C1D95),
+    onTertiaryContainer = VioletLight,
+    
+    background = DarkBackground,
+    onBackground = TextPrimaryDark,
+    surface = DarkSurface,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = TextSecondaryDark,
+    
+    error = ErrorNeon,
+    onError = Color.White,
+    errorContainer = ErrorContainerDark,
+    onErrorContainer = Color(0xFFFFCCD5),
+    
+    outline = DarkSurfaceBorder,
+    outlineVariant = Color(0xFF1E293B)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Green40,
+    primary = EmeraldDeep,
     onPrimary = Color.White,
-    primaryContainer = Green90,
-    onPrimaryContainer = Green30,
-    secondary = Teal40,
+    primaryContainer = EmeraldLight,
+    onPrimaryContainer = Color(0xFF022C22),
+    
+    secondary = CyanDeep,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFB2DFDB),
-    onSecondaryContainer = Teal30,
-    tertiary = Amber40,
+    secondaryContainer = CyanLight,
+    onSecondaryContainer = Color(0xFF083344),
+    
+    tertiary = VioletDeep,
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFFFECB3),
-    onTertiaryContainer = Amber30,
-    background = Neutral99,
-    onBackground = Neutral10,
-    surface = Neutral99,
-    onSurface = Neutral10,
-    surfaceVariant = Neutral95,
-    onSurfaceVariant = Neutral20,
-    error = Error40,
-    onError = Color.White
+    tertiaryContainer = VioletLight,
+    onTertiaryContainer = Color(0xFF2E1065),
+    
+    background = LightBackground,
+    onBackground = TextPrimaryLight,
+    surface = LightSurface,
+    onSurface = TextPrimaryLight,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = TextSecondaryLight,
+    
+    error = ErrorNeon,
+    onError = Color.White,
+    errorContainer = ErrorContainerLight,
+    onErrorContainer = Color(0xFF881337),
+    
+    outline = LightSurfaceBorder,
+    outlineVariant = Color(0xFFCBD5E1)
 )
 
 @Composable

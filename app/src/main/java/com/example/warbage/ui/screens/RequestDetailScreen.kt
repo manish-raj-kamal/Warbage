@@ -1,9 +1,11 @@
 package com.example.warbage.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.warbage.data.WarbageDatabase
 import com.example.warbage.data.repository.LotRepository
 import com.example.warbage.data.repository.RequestRepository
@@ -20,6 +23,9 @@ import com.example.warbage.ui.glass.GlassButton
 import com.example.warbage.ui.glass.GlassCard
 import com.example.warbage.ui.glass.GlassIconButton
 import com.example.warbage.ui.glass.LiquidTopAppBar
+import com.example.warbage.ui.glass.liquidGlass
+import com.example.warbage.ui.theme.CyanBright
+import com.example.warbage.ui.theme.EmeraldBright
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -45,7 +51,7 @@ fun RequestDetailScreen(
         containerColor = Color.Transparent,
         topBar = {
             LiquidTopAppBar(
-                title = { Text("Request Details", fontWeight = FontWeight.Bold) },
+                title = { Text("Request Inspection", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     GlassIconButton(
                         onClick = onBack,
@@ -66,8 +72,8 @@ fun RequestDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Request Hero Glass Card
                 GlassCard(
@@ -81,15 +87,35 @@ fun RequestDetailScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .liquidGlass(
+                                    shape = CircleShape,
+                                    blurRadius = 14.dp,
+                                    tint = CyanBright.copy(alpha = 0.2f),
+                                    borderAlpha = 0.5f,
+                                    elevation = 2.dp
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                                contentDescription = null,
+                                tint = CyanBright,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = req.requestId,
                             style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         StatusBadge(status = req.status)
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = dateFormat.format(Date(req.dateCreated)),
                             style = MaterialTheme.typography.bodySmall,
@@ -100,17 +126,17 @@ fun RequestDetailScreen(
 
                 // Lot details glass cards
                 if (lot != null) {
-                    DetailGlassInfoCard("Lot Identifier", lot.lotId)
-                    DetailGlassInfoCard("Material", material?.let { "${it.icon} ${it.name}" } ?: "Unknown")
-                    DetailGlassInfoCard("Weight", "${lot.weight} kg")
+                    DetailGlassInfoCard("Lot Number", lot.lotId)
+                    DetailGlassInfoCard("Classified Material", material?.let { "${it.icon} ${it.name}" } ?: "Scrap")
+                    DetailGlassInfoCard("Verified Weight", "${lot.weight} kg")
                     DetailGlassInfoCard(
-                        "Estimated Value",
+                        "Estimated Payout",
                         "₹${String.format("%,.0f", lot.estimatedMinValue)} – ₹${String.format("%,.0f", lot.estimatedMaxValue)}"
                     )
                 }
 
                 if (recycler != null) {
-                    DetailGlassInfoCard("Recycler", "${recycler.name} (${recycler.location})")
+                    DetailGlassInfoCard("Processing Facility", "${recycler.name} • ${recycler.location}")
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -130,8 +156,8 @@ fun RequestDetailScreen(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
-                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
-                                shape = RoundedCornerShape(16.dp)
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.25f),
+                                shape = RoundedCornerShape(18.dp)
                             ) {
                                 Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -145,12 +171,13 @@ fun RequestDetailScreen(
                                         lot?.let { lotRepository.updateStatus(it.id, "accepted") }
                                     }
                                 },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(16.dp)
+                                modifier = Modifier.weight(1.2f),
+                                tint = EmeraldBright.copy(alpha = 0.35f),
+                                shape = RoundedCornerShape(18.dp)
                             ) {
-                                Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Accept", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                Text("Accept Lot", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -164,16 +191,17 @@ fun RequestDetailScreen(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp),
+                                .height(54.dp),
+                            tint = EmeraldBright.copy(alpha = 0.35f),
                             shape = RoundedCornerShape(18.dp)
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Mark as Completed",
+                                text = "Mark Handover as Completed",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -181,7 +209,7 @@ fun RequestDetailScreen(
                         GlassCard(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            tint = EmeraldBright.copy(alpha = 0.18f),
                             elevation = 3.dp
                         ) {
                             Row(
@@ -194,14 +222,14 @@ fun RequestDetailScreen(
                                 Icon(
                                     Icons.Default.CheckCircle,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = EmeraldBright
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = "This transaction has been completed",
+                                    text = "Handover & Settlement Completed",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = EmeraldBright
                                 )
                             }
                         }
@@ -243,7 +271,7 @@ fun RequestDetailScreen(
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            CircularProgressIndicator(color = EmeraldBright)
         }
     }
 }
@@ -252,7 +280,7 @@ fun RequestDetailScreen(
 private fun DetailGlassInfoCard(label: String, value: String) {
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         elevation = 2.dp
     ) {
         Row(

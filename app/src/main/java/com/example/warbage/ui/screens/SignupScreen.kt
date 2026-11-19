@@ -1,5 +1,6 @@
 package com.example.warbage.ui.screens
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,10 +11,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Factory
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Recycling
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -30,17 +35,22 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.warbage.auth.AuthManager
+import com.example.warbage.data.WarbageDatabase
+import com.example.warbage.data.entity.RecyclerEntity
 import com.example.warbage.data.entity.UserEntity
 import com.example.warbage.ui.glass.GlassButton
 import com.example.warbage.ui.glass.GlassCard
 import com.example.warbage.ui.glass.GlassTextField
 import com.example.warbage.ui.glass.LiquidSegmentedTabs
 import com.example.warbage.ui.glass.liquidGlass
+import com.example.warbage.ui.theme.EmeraldBright
 import kotlinx.coroutines.launch
 
 @Composable
 fun SignupScreen(
+    database: WarbageDatabase,
     authManager: AuthManager,
     onSignupSuccess: (UserEntity) -> Unit,
     onNavigateToLogin: () -> Unit
@@ -49,16 +59,27 @@ fun SignupScreen(
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
 
+    var selectedRoleIndex by remember { mutableIntStateOf(0) } // 0: Collector, 1: Recycler
+    val roles = listOf("Collector & Seller", "Licensed Recycler")
+    val roleIcons = listOf(Icons.Default.Person, Icons.Default.Factory)
+    val selectedRole = if (selectedRoleIndex == 0) "collector" else "recycler"
+
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
-    var selectedRoleIndex by remember { mutableIntStateOf(0) } // 0: Collector, 1: Recycler
+
+    // Recycler Specific Fields
+    var companyName by remember { mutableStateOf("") }
+    var facilityLocation by remember { mutableStateOf("") }
+    var acceptedMaterials by remember { mutableStateOf("PCB,Batteries,Mobile,Cables") }
+
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val roles = listOf("Collector", "Recycler")
-    val selectedRole = if (selectedRoleIndex == 0) "collector" else "recycler"
+    // Google Sign-In Recycler Complete Details Dialog
+    var showGoogleRecyclerDialog by remember { mutableStateOf(false) }
+    var pendingGoogleUser by remember { mutableStateOf<UserEntity?>(null) }
 
     Box(
         modifier = Modifier
@@ -77,39 +98,41 @@ fun SignupScreen(
             // Header Orb
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(84.dp)
                     .liquidGlass(
                         shape = CircleShape,
-                        blurRadius = 20.dp,
-                        lensHeight = 14.dp,
-                        lensAmount = 18.dp,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
-                        borderAlpha = 0.6f,
-                        elevation = 6.dp
+                        blurRadius = 22.dp,
+                        lensHeight = 16.dp,
+                        lensAmount = 20.dp,
+                        tint = EmeraldBright.copy(alpha = 0.22f),
+                        borderAlpha = 0.65f,
+                        elevation = 8.dp
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Recycling,
+                    imageVector = Icons.Default.AllInclusive,
                     contentDescription = "Warbage Logo",
-                    modifier = Modifier.size(42.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(46.dp),
+                    tint = EmeraldBright
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Join WARbage",
+                text = "Join WARBAGE",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
+                letterSpacing = 0.5.sp,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
-                text = "Create your account to start recycling smart",
+                text = "Create your verified account",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
             )
 
@@ -141,7 +164,7 @@ fun SignupScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .liquidGlass(
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(14.dp),
                                         blurRadius = 10.dp,
                                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
                                         borderAlpha = 0.5f
@@ -161,28 +184,30 @@ fun SignupScreen(
                     // Role Selector Toggle
                     Column {
                         Text(
-                            text = "Account Role",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            text = "SELECT YOUR ROLE",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.6.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         LiquidSegmentedTabs(
                             tabs = roles,
+                            icons = roleIcons,
                             selectedTabIndex = selectedRoleIndex,
                             onTabSelected = { selectedRoleIndex = it },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
-                    // Full Name Field
+                    // Full Name / Contact Person
                     GlassTextField(
                         value = name,
                         onValueChange = {
                             name = it
                             errorMessage = null
                         },
-                        label = "Full Name",
+                        label = if (selectedRole == "recycler") "Contact Person Name" else "Full Name",
                         placeholder = "e.g. Alex Green",
                         leadingIcon = {
                             Icon(
@@ -200,6 +225,81 @@ fun SignupScreen(
                         )
                     )
 
+                    // Recycler specific fields
+                    if (selectedRole == "recycler") {
+                        GlassTextField(
+                            value = companyName,
+                            onValueChange = {
+                                companyName = it
+                                errorMessage = null
+                            },
+                            label = "Recycler Facility / Company Name",
+                            placeholder = "e.g. Green Recycle Yard Ltd",
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Business,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            )
+                        )
+
+                        GlassTextField(
+                            value = facilityLocation,
+                            onValueChange = {
+                                facilityLocation = it
+                                errorMessage = null
+                            },
+                            label = "Facility Location / City",
+                            placeholder = "e.g. Mumbai, Maharashtra",
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            )
+                        )
+
+                        GlassTextField(
+                            value = acceptedMaterials,
+                            onValueChange = {
+                                acceptedMaterials = it
+                                errorMessage = null
+                            },
+                            label = "Accepted E-Waste Types",
+                            placeholder = "e.g. PCB,Batteries,Mobile,Cables",
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Inventory,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            )
+                        )
+                    }
+
                     // Email Field
                     GlassTextField(
                         value = email,
@@ -208,7 +308,7 @@ fun SignupScreen(
                             errorMessage = null
                         },
                         label = "Email Address",
-                        placeholder = "you@example.com",
+                        placeholder = "name@domain.com",
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Email,
@@ -226,14 +326,14 @@ fun SignupScreen(
                     )
 
                     // Password Field
-                    OutlinedTextField(
+                    GlassTextField(
                         value = password,
                         onValueChange = {
                             password = it
                             errorMessage = null
                         },
-                        label = { Text("Password (min 6 characters)") },
-                        placeholder = { Text("Choose a password") },
+                        label = "Password (min 6 characters)",
+                        placeholder = "Choose a secure password",
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Lock,
@@ -257,19 +357,7 @@ fun SignupScreen(
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = { focusManager.clearFocus() }
-                        ),
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .liquidGlass(
-                                shape = RoundedCornerShape(16.dp),
-                                blurRadius = 16.dp,
-                                lensHeight = 10.dp,
-                                lensAmount = 12.dp,
-                                borderAlpha = 0.3f,
-                                elevation = 1.dp
-                            )
+                        )
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -278,24 +366,43 @@ fun SignupScreen(
                     GlassButton(
                         onClick = {
                             if (name.isBlank() || email.isBlank() || password.isBlank()) {
-                                errorMessage = "Please fill in all fields."
+                                errorMessage = "Please fill in all required fields."
+                                return@GlassButton
+                            }
+                            if (selectedRole == "recycler" && (companyName.isBlank() || facilityLocation.isBlank())) {
+                                errorMessage = "Please enter your facility name and location."
                                 return@GlassButton
                             }
                             if (password.length < 6) {
                                 errorMessage = "Password must be at least 6 characters."
                                 return@GlassButton
                             }
+                            focusManager.clearFocus()
                             isLoading = true
                             errorMessage = null
                             scope.launch {
                                 val result = authManager.signupWithEmail(
-                                    email = email,
+                                    email = email.trim(),
                                     password = password,
-                                    displayName = name,
+                                    displayName = if (selectedRole == "recycler") companyName.trim().ifEmpty { name.trim() } else name.trim(),
                                     role = selectedRole
                                 )
                                 isLoading = false
                                 result.onSuccess { user ->
+                                    if (selectedRole == "recycler") {
+                                        // Create real Recycler entry in database
+                                        database.recyclerDao().insertRecycler(
+                                            RecyclerEntity(
+                                                name = companyName.trim().ifEmpty { name.trim() },
+                                                location = facilityLocation.trim().ifEmpty { "Local Area" },
+                                                latitude = 20.5937,
+                                                longitude = 78.9629,
+                                                materials = acceptedMaterials.trim().ifEmpty { "PCB,Batteries,Mobile,Cables" },
+                                                pricePerKg = 500,
+                                                authorized = true
+                                            )
+                                        )
+                                    }
                                     onSignupSuccess(user)
                                 }.onFailure { error ->
                                     errorMessage = error.localizedMessage ?: "Registration failed."
@@ -304,16 +411,17 @@ fun SignupScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp),
+                            .height(52.dp),
                         enabled = !isLoading,
                         isLoading = isLoading,
-                        shape = RoundedCornerShape(16.dp)
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(18.dp)
                     ) {
                         Text(
-                            text = "Create Account",
+                            text = if (selectedRole == "recycler") "Register Recycler Yard" else "Create Account",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -326,41 +434,37 @@ fun SignupScreen(
                     ) {
                         HorizontalDivider(
                             modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                         )
                         Text(
-                            text = " OR ",
+                            text = "  OR CONTINUE WITH  ",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 0.5.sp
                         )
                         HorizontalDivider(
                             modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                         )
                     }
 
                     // Google Sign-Up Button
                     GlassButton(
                         onClick = {
+                            focusManager.clearFocus()
                             isLoading = true
                             errorMessage = null
                             scope.launch {
-                                val webClientId = try {
-                                    val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
-                                    if (resId != 0) context.getString(resId) else ""
-                                } catch (_: Exception) { "" }
-
-                                if (webClientId.isBlank() || webClientId.contains("placeholder")) {
-                                    errorMessage = "To enable Google Sign-In, download your real google-services.json from Firebase with Google Sign-In enabled."
-                                    isLoading = false
-                                    return@launch
-                                }
-
-                                val result = authManager.signInWithGoogle(context, webClientId, selectedRole)
+                                val result = authManager.signInWithGoogle(context, role = selectedRole)
                                 isLoading = false
                                 result.onSuccess { user ->
-                                    onSignupSuccess(user)
+                                    if (selectedRole == "recycler") {
+                                        pendingGoogleUser = user
+                                        showGoogleRecyclerDialog = true
+                                    } else {
+                                        onSignupSuccess(user)
+                                    }
                                 }.onFailure { error ->
                                     errorMessage = error.localizedMessage ?: "Google Sign-Up failed."
                                 }
@@ -368,19 +472,24 @@ fun SignupScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
-                        tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
+                            .height(50.dp),
+                        tint = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
                         enabled = !isLoading,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(18.dp)
                     ) {
-                        GoogleLogoIcon(modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Sign up with Google",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            GoogleLogoIcon(modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Sign up with Google",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             }
@@ -398,7 +507,7 @@ fun SignupScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Log In",
+                    text = "Sign In",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -407,5 +516,77 @@ fun SignupScreen(
             }
         }
     }
-}
 
+    // Google Sign-In Recycler Facility Info Modal
+    if (showGoogleRecyclerDialog && pendingGoogleUser != null) {
+        AlertDialog(
+            onDismissRequest = { /* Force completion */ },
+            title = {
+                Text("Complete Recycler Registration", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Please provide your processing facility details to complete your Recycler account.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    GlassTextField(
+                        value = companyName,
+                        onValueChange = { companyName = it },
+                        label = "Company / Facility Name",
+                        placeholder = "e.g. Green Recycling Yard"
+                    )
+                    GlassTextField(
+                        value = facilityLocation,
+                        onValueChange = { facilityLocation = it },
+                        label = "Facility Location",
+                        placeholder = "e.g. Mumbai, Maharashtra"
+                    )
+                    GlassTextField(
+                        value = acceptedMaterials,
+                        onValueChange = { acceptedMaterials = it },
+                        label = "Accepted E-Waste Types",
+                        placeholder = "e.g. PCB,Batteries,Mobile,Cables"
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            database.recyclerDao().insertRecycler(
+                                RecyclerEntity(
+                                    name = companyName.trim().ifEmpty { pendingGoogleUser!!.displayName },
+                                    location = facilityLocation.trim().ifEmpty { "Local Area" },
+                                    latitude = 20.5937,
+                                    longitude = 78.9629,
+                                    materials = acceptedMaterials.trim().ifEmpty { "PCB,Batteries,Mobile,Cables" },
+                                    pricePerKg = 500,
+                                    authorized = true
+                                )
+                            )
+                            showGoogleRecyclerDialog = false
+                            onSignupSuccess(pendingGoogleUser!!)
+                        }
+                    },
+                    enabled = companyName.isNotBlank() && facilityLocation.isNotBlank()
+                ) {
+                    Text("Save & Complete", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    scope.launch {
+                        authManager.logout() // Cancel signup since they refused to provide info
+                        showGoogleRecyclerDialog = false 
+                    }
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}

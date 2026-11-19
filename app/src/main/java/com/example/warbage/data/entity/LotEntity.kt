@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "lots")
 data class LotEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val userId: String = "",
     val lotId: String,
     val materialId: Int,
     val weight: Double,

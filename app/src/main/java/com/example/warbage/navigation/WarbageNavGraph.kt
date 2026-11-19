@@ -14,7 +14,7 @@ sealed class Screen(val route: String) {
     data object Login : Screen("login")
     data object Signup : Screen("signup")
     data object Profile : Screen("profile")
-    data object RoleSelect : Screen("role_select")
+    // Role Select screen has been removed
     data object Home : Screen("home")
     data object MaterialList : Screen("materials")
     data object MaterialDetail : Screen("material_detail/{materialId}") {
@@ -52,6 +52,7 @@ fun WarbageNavGraph(
         // First Screen: Login
         composable(Screen.Login.route) {
             LoginScreen(
+                database = database,
                 authManager = authManager,
                 onLoginSuccess = { user ->
                     val destination = if (user.role.lowercase() == "recycler") {
@@ -72,6 +73,7 @@ fun WarbageNavGraph(
         // Signup Screen
         composable(Screen.Signup.route) {
             SignupScreen(
+                database = database,
                 authManager = authManager,
                 onSignupSuccess = { user ->
                     val destination = if (user.role.lowercase() == "recycler") {
@@ -101,33 +103,12 @@ fun WarbageNavGraph(
                     }
                 },
                 onRoleChanged = { role ->
-                    val target = if (role.lowercase() == "recycler") {
-                        Screen.RecyclerDashboard.route
-                    } else {
-                        Screen.Home.route
-                    }
-                    navController.navigate(target) {
-                        popUpTo(Screen.Login.route)
-                    }
+                    // No-op since changing role is disabled
                 }
             )
         }
 
-        // Quick Role Switch Screen
-        composable(Screen.RoleSelect.route) {
-            RoleSelectScreen(
-                onCollectorSelected = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.RoleSelect.route) { inclusive = true }
-                    }
-                },
-                onRecyclerSelected = {
-                    navController.navigate(Screen.RecyclerDashboard.route) {
-                        popUpTo(Screen.RoleSelect.route) { inclusive = true }
-                    }
-                }
-            )
-        }
+        // Role Select Screen removed
 
         composable(Screen.Home.route) {
             HomeScreen(
@@ -136,9 +117,6 @@ fun WarbageNavGraph(
                 onFindRecyclerClick = { navController.navigate(Screen.RecyclerMap.route) },
                 onTransactionsClick = { navController.navigate(Screen.TransactionList.route) },
                 onAiScannerClick = { navController.navigate(Screen.AiScanner.route) },
-                onSwitchRole = {
-                    navController.navigate(Screen.RoleSelect.route)
-                },
                 onProfileClick = {
                     navController.navigate(Screen.Profile.route)
                 }
@@ -252,6 +230,7 @@ fun WarbageNavGraph(
 
         composable(Screen.AiScanner.route) {
             AiScannerScreen(
+                database = database,
                 onMaterialDetected = { materialId ->
                     navController.navigate(Screen.MaterialDetail.createRoute(materialId)) {
                         popUpTo(Screen.Home.route)
@@ -266,9 +245,6 @@ fun WarbageNavGraph(
                 database = database,
                 onRequestClick = { requestId ->
                     navController.navigate(Screen.RequestDetail.createRoute(requestId))
-                },
-                onSwitchRole = {
-                    navController.navigate(Screen.RoleSelect.route)
                 },
                 onProfileClick = {
                     navController.navigate(Screen.Profile.route)

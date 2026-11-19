@@ -1,18 +1,28 @@
 package com.example.warbage.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.warbage.ui.glass.liquidGlass
 import com.example.warbage.ui.theme.StatusAccepted
 import com.example.warbage.ui.theme.StatusCompleted
+import com.example.warbage.ui.theme.StatusInTransit
 import com.example.warbage.ui.theme.StatusPending
 import com.example.warbage.ui.theme.StatusRejected
 
@@ -22,34 +32,54 @@ fun StatusBadge(
     modifier: Modifier = Modifier
 ) {
     val (color, label) = when (status.lowercase()) {
-        "pending" -> StatusPending to "🟡 Pending"
-        "accepted" -> StatusAccepted to "🟢 Accepted"
-        "completed" -> StatusCompleted to "✅ Completed"
-        "rejected" -> StatusRejected to "❌ Rejected"
-        "created" -> StatusPending to "📦 Created"
-        "submitted" -> StatusPending to "📤 Submitted"
-        else -> StatusPending to status
+        "pending" -> StatusPending to "PENDING"
+        "accepted" -> StatusAccepted to "ACCEPTED"
+        "completed" -> StatusCompleted to "COMPLETED"
+        "rejected" -> StatusRejected to "REJECTED"
+        "in_transit", "in transit" -> StatusInTransit to "IN TRANSIT"
+        "created" -> StatusPending to "CREATED"
+        "submitted" -> StatusInTransit to "SUBMITTED"
+        else -> StatusPending to status.uppercase()
     }
 
     Box(
         modifier = modifier
             .liquidGlass(
                 shape = CircleShape,
-                blurRadius = 12.dp,
+                blurRadius = 14.dp,
                 lensHeight = 8.dp,
                 lensAmount = 10.dp,
-                tint = color.copy(alpha = 0.22f),
-                borderAlpha = 0.5f,
+                tint = color.copy(alpha = 0.16f),
+                borderAlpha = 0.45f,
                 elevation = 2.dp
             )
-            .padding(horizontal = 12.dp, vertical = 5.dp),
+            .padding(horizontal = 10.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Glowing status beacon dot
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = CircleShape,
+                        spotColor = color,
+                        ambientColor = color
+                    )
+                    .clip(CircleShape)
+                    .background(color)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.6.sp,
+                color = color
+            )
+        }
     }
 }

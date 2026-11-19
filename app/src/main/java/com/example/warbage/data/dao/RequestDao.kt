@@ -12,6 +12,15 @@ interface RequestDao {
     @Query("SELECT * FROM requests ORDER BY dateCreated DESC")
     fun getAllRequests(): Flow<List<RequestEntity>>
 
+    @Query("SELECT * FROM requests WHERE userId = :userId ORDER BY dateCreated DESC")
+    fun getRequestsByUser(userId: String): Flow<List<RequestEntity>>
+
+    @Query("SELECT * FROM requests WHERE recyclerId = :recyclerId AND (status = 'pending' OR status = 'accepted') ORDER BY dateCreated ASC")
+    fun getPendingRequestsForRecycler(recyclerId: Int): Flow<List<RequestEntity>>
+
+    @Query("SELECT * FROM requests WHERE recyclerId = :recyclerId ORDER BY dateCreated DESC")
+    fun getAllRequestsForRecycler(recyclerId: Int): Flow<List<RequestEntity>>
+
     @Query("SELECT * FROM requests WHERE status = 'pending' OR status = 'accepted' ORDER BY dateCreated DESC")
     fun getPendingRequests(): Flow<List<RequestEntity>>
 
