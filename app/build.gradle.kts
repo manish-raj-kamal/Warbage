@@ -14,6 +14,15 @@ if (localPropertiesFile.exists()) {
 }
 val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY") ?: "YOUR_API_KEY_HERE"
 
+val releaseKeystoreFile: String? = localProperties.getProperty("RELEASE_KEYSTORE_FILE")
+    ?: System.getenv("RELEASE_KEYSTORE_FILE")
+val releaseKeystorePassword: String? = localProperties.getProperty("RELEASE_KEYSTORE_PASSWORD")
+    ?: System.getenv("RELEASE_KEYSTORE_PASSWORD")
+val releaseKeyAlias: String? = localProperties.getProperty("RELEASE_KEY_ALIAS")
+    ?: System.getenv("RELEASE_KEY_ALIAS")
+val releaseKeyPassword: String? = localProperties.getProperty("RELEASE_KEY_PASSWORD")
+    ?: System.getenv("RELEASE_KEY_PASSWORD")
+
 android {
     namespace = "com.example.warbage"
     compileSdk {
@@ -31,8 +40,24 @@ android {
         manifestPlaceholders["mapsApiKey"] = mapsApiKey
     }
 
+    signingConfigs {
+        create("release") {
+            val ksFile = releaseKeystoreFile?.let { file(it) } ?: rootProject.file("warbage-release.jks")
+            if (ksFile.exists()) {
+                storeFile = ksFile
+                storePassword = releaseKeystorePassword ?: "Warbage@Eco2026!"
+                keyAlias = releaseKeyAlias ?: "warbage-release-key"
+                keyPassword = releaseKeyPassword ?: "Warbage@Eco2026!"
+            }
+        }
+    }
+
     buildTypes {
         release {
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null && releaseSigning.storeFile!!.exists()) {
+                signingConfig = releaseSigning
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
