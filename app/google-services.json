@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:28003673307:android:ad1c0f5c7523fc506818fe",
         "android_client_info": {
-          "package_name": "com.example.warbage"
+          "package_name": "com.warbage.recycling"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "28003673307-njda16q87gtv33q1s0mdbp2coivvi6vr.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.warbage",
+            "package_name": "com.warbage.recycling",
             "certificate_hash": "c0c7e4cfa7f66a10145624a4cc28ee45c2eca1eb"
           }
         },

@@ -6,9 +6,9 @@
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Dao interface * { *; }
 -keep @androidx.room.Entity class * { *; }
--keep class com.example.warbage.data.entity.** { *; }
--keep class com.example.warbage.data.dao.** { *; }
--keep class com.example.warbage.data.WarbageDatabase** { *; }
+-keep class com.warbage.recycling.data.entity.** { *; }
+-keep class com.warbage.recycling.data.dao.** { *; }
+-keep class com.warbage.recycling.data.WarbageDatabase** { *; }
 -keepclassmembers class * {
     @androidx.room.PrimaryKey *;
     @androidx.room.ColumnInfo *;
@@ -17,8 +17,8 @@
 # Keep Retrofit & Gson data transfer models
 -keepattributes Signature
 -keepattributes *Annotation*
--keep class com.example.warbage.network.** { *; }
--keepclassmembers class com.example.warbage.network.** { *; }
+-keep class com.warbage.recycling.network.** { *; }
+-keepclassmembers class com.warbage.recycling.network.** { *; }
 -keepclassmembers enum * { *; }
 
 # Retrofit interfaces

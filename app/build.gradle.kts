@@ -24,13 +24,13 @@ val releaseKeyPassword: String? = localProperties.getProperty("RELEASE_KEY_PASSW
     ?: System.getenv("RELEASE_KEY_PASSWORD")
 
 android {
-    namespace = "com.example.warbage"
+    namespace = "com.warbage.recycling"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.warbage"
+        applicationId = "com.warbage.recycling"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
