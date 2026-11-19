@@ -437,7 +437,7 @@ function getPrivacyPolicyHtml() {
           <strong>Effective Date:</strong> November 20, 2026
         </span>
         <span class="meta-badge">
-          <strong>Version:</strong> 1.2.0 (Build 3)
+          <strong>Version:</strong> 1.0.0 (First Build)
         </span>
       </div>
     </div>
@@ -484,7 +484,7 @@ function getPrivacyPolicyHtml() {
           </div>
           <div>
             <div class="summary-title">Self-Service Deletion</div>
-            <div class="summary-desc">Delete your account anytime in-app (Profile ➔ Delete) or via privacy@warbage.eco.</div>
+            <div class="summary-desc">Delete your account anytime in-app (Profile ➔ Delete) or via m18labs.dev@gmail.com.</div>
           </div>
         </div>
       </div>
@@ -716,7 +716,7 @@ function getPrivacyPolicyHtml() {
           If you no longer have access to the mobile application or wish to submit an offline erasure request:
         </p>
         <ul>
-          <li>Send an email to <strong><a href="mailto:privacy@warbage.eco?subject=Account%20and%20Data%20Deletion%20Request">privacy@warbage.eco</a></strong> or <strong><a href="mailto:support@warbage.eco?subject=Account%20and%20Data%20Deletion%20Request">support@warbage.eco</a></strong>.</li>
+          <li>Send an email to <strong><a href="mailto:m18labs.dev@gmail.com?subject=Account%20and%20Data%20Deletion%20Request">m18labs.dev@gmail.com</a></strong>.</li>
           <li>Use the subject line: <code>Account and Data Deletion Request - Warbage</code>.</li>
           <li>Provide your registered email address and phone number for ownership verification.</li>
           <li>Upon verification, our administrative team will permanently purge your user profile, personal identifiers, open lots, and associated metadata from our database within <strong>30 days</strong>, and confirm completion via email.</li>
@@ -730,7 +730,7 @@ function getPrivacyPolicyHtml() {
           Warbage is designed strictly for adult collectors, commercial recyclers, and individuals of legal working age (18 years or older, or at least 13 with verified parental guidance where allowed by law). We do not knowingly solicit, collect, or store personal information from children under the age of 13.
         </p>
         <p>
-          If we discover that personal data has been inadvertently collected from a child under 13 without verified parental consent, we will immediately take steps to permanently delete that information from our records. If you believe a minor has provided us with personal information, please notify us immediately at <a href="mailto:privacy@warbage.eco">privacy@warbage.eco</a>.
+          If we discover that personal data has been inadvertently collected from a child under 13 without verified parental consent, we will immediately take steps to permanently delete that information from our records. If you believe a minor has provided us with personal information, please notify us immediately at <a href="mailto:m18labs.dev@gmail.com">m18labs.dev@gmail.com</a>.
         </p>
       </section>
 
@@ -757,8 +757,7 @@ function getPrivacyPolicyHtml() {
         <div class="step-box">
           <p><strong>Warbage Eco Solutions</strong></p>
           <p><strong>Lead Developer & Contact:</strong> Manish Raj Kamal</p>
-          <p><strong>Privacy Inquiries:</strong> <a href="mailto:privacy@warbage.eco">privacy@warbage.eco</a></p>
-          <p><strong>General Support:</strong> <a href="mailto:support@warbage.eco">support@warbage.eco</a></p>
+          <p><strong>Privacy & Support Inquiries:</strong> <a href="mailto:m18labs.dev@gmail.com">m18labs.dev@gmail.com</a></p>
           <p><strong>Website & API Portal:</strong> <a href="https://warbage.vercel.app">https://warbage.vercel.app</a></p>
         </div>
       </section>
@@ -771,7 +770,7 @@ function getPrivacyPolicyHtml() {
     <p style="margin-top: 0.5rem;">
       <a href="/privacy">Privacy Policy</a> &bull; 
       <a href="https://github.com/manish-raj-kamal/Warbage" target="_blank" rel="noopener">GitHub Repository</a> &bull;
-      <a href="mailto:privacy@warbage.eco">Contact Privacy Team</a>
+      <a href="mailto:m18labs.dev@gmail.com">Contact Privacy Team</a>
     </p>
   </footer>
 

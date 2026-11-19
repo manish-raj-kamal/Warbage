@@ -306,7 +306,7 @@ app.get('/', (req, res) => {
   res.json({
     status: 'online',
     service: 'Warbage Eco Backend API',
-    version: '1.2.0',
+    version: '1.0.0',
     privacyPolicy: 'https://warbage.vercel.app/privacy'
   });
 });
