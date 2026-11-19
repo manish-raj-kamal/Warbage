@@ -1,0 +1,782 @@
+// backend/privacyPolicy.js
+// Standalone Google Play & GDPR compliant Privacy Policy renderer for Warbage (com.warbage.recycling)
+
+function getPrivacyPolicyHtml() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Warbage Recycling</title>
+  <meta name="description" content="Official Privacy Policy for Warbage: E-Waste Recycling Platform (com.warbage.recycling). Learn how your data is collected, protected, and managed.">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Privacy Policy - Warbage Recycling">
+  <meta property="og:description" content="Official Privacy Policy for the Warbage Android Application and Backend Services.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://warbage.vercel.app/privacy">
+  <style>
+    :root {
+      --primary: #059669;
+      --primary-light: #10b981;
+      --primary-dark: #047857;
+      --accent: #06b6d4;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+      --card-bg: #ffffff;
+      --badge-bg: #ecfdf5;
+      --badge-text: #065f46;
+      --code-bg: #f1f5f9;
+      --callout-bg: #f0fdf4;
+      --callout-border: #bbf7d0;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background-color: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Navigation / Brand Banner */
+    header {
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #0f766e 100%);
+      color: #ffffff;
+      padding: 3rem 1.5rem 4rem;
+      text-align: center;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+
+    .brand-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 68px;
+      height: 68px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      border-radius: 20px;
+      margin-bottom: 1.25rem;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .brand-logo svg {
+      width: 38px;
+      height: 38px;
+      fill: none;
+      stroke: #34d399;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: #d1fae5;
+      max-width: 640px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .metadata-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+
+    .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Main Container & Layout */
+    .container {
+      max-width: 940px;
+      margin: -2rem auto 4rem;
+      padding: 0 1.5rem;
+      position: relative;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Key Summary Highlights Callout */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .summary-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .summary-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ecfdf5;
+      color: var(--primary);
+    }
+
+    .summary-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: var(--primary);
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .summary-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .summary-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Table of Contents */
+    .toc-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .toc-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 0.5rem 1.5rem;
+    }
+
+    .toc-list a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+
+    .toc-list a:hover {
+      color: var(--primary-dark);
+      text-decoration: underline;
+    }
+
+    /* Typography & Content Sections */
+    section {
+      margin-bottom: 2.75rem;
+      scroll-margin-top: 2rem;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    h2 .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    p {
+      margin-bottom: 1rem;
+      color: #334155;
+    }
+
+    ul, ol {
+      margin-bottom: 1.25rem;
+      padding-left: 1.5rem;
+      color: #334155;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    strong {
+      color: #0f172a;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85em;
+      background: var(--code-bg);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+
+    /* Alert / Notice Boxes */
+    .alert {
+      background: var(--callout-bg);
+      border-left: 4px solid var(--primary);
+      padding: 1.2rem;
+      border-radius: 8px;
+      margin: 1.25rem 0;
+      font-size: 0.95rem;
+    }
+
+    .alert-warning {
+      background: #fffbeb;
+      border-left-color: #f59e0b;
+      color: #92400e;
+    }
+
+    .alert-info {
+      background: #eff6ff;
+      border-left-color: #3b82f6;
+      color: #1e40af;
+    }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    /* Step Guide for Account Deletion */
+    .step-box {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      background: #f8fafc;
+      margin-top: 1rem;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .step-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      background: #ffffff;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        padding: 1.5rem;
+      }
+      h1 {
+        font-size: 1.75rem;
+      }
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Hero Header -->
+  <header>
+    <div class="brand-container">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h1>Privacy Policy</h1>
+      <p class="subtitle">Warbage: Smart E-Waste Recycling Platform</p>
+      
+      <div class="metadata-badges">
+        <span class="meta-badge">
+          <strong>App:</strong> Warbage Recycling
+        </span>
+        <span class="meta-badge">
+          <strong>Package ID:</strong> <code>com.warbage.recycling</code>
+        </span>
+        <span class="meta-badge">
+          <strong>Effective Date:</strong> November 20, 2026
+        </span>
+        <span class="meta-badge">
+          <strong>Version:</strong> 1.2.0 (Build 3)
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      
+      <!-- Quick Highlights Grid -->
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <div class="summary-title">Data Protection First</div>
+            <div class="summary-desc">Strict party-level MongoDB isolation. We never sell or broker your personal data.</div>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <div>
+            <div class="summary-title">On-Device AI Camera</div>
+            <div class="summary-desc">Camera frames are classified locally with TensorFlow Lite. No images are streamed externally.</div>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+          </div>
+          <div>
+            <div class="summary-title">Zero Location Tracking</div>
+            <div class="summary-desc">No GPS tracking. Addresses are entered manually by users for trade coordination.</div>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+          </div>
+          <div>
+            <div class="summary-title">Self-Service Deletion</div>
+            <div class="summary-desc">Delete your account anytime in-app (Profile ➔ Delete) or via privacy@warbage.eco.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table of Contents -->
+      <nav class="toc-card" aria-label="Table of Contents">
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Table of Contents
+        </h3>
+        <ul class="toc-list">
+          <li><a href="#intro">1. Introduction & Scope</a></li>
+          <li><a href="#info-collected">2. Information We Collect</a></li>
+          <li><a href="#permissions">3. Device Permissions & Camera</a></li>
+          <li><a href="#location">4. Location Data Policy</a></li>
+          <li><a href="#usage">5. How We Use Information</a></li>
+          <li><a href="#sharing">6. Bilateral Data Sharing</a></li>
+          <li><a href="#third-parties">7. Third-Party Services</a></li>
+          <li><a href="#security">8. Security & Data Retention</a></li>
+          <li><a href="#deletion">9. Account & Data Deletion</a></li>
+          <li><a href="#children">10. Children's Privacy</a></li>
+          <li><a href="#rights">11. Your Rights & Jurisdiction</a></li>
+          <li><a href="#contact">12. Contact Information</a></li>
+        </ul>
+      </nav>
+
+      <!-- Section 1: Introduction -->
+      <section id="intro">
+        <h2><span class="section-num">1</span> Introduction & Scope</h2>
+        <p>
+          Welcome to <strong>Warbage</strong>, a smart electronic waste (e-waste) aggregation and recycling platform developed and operated by <strong>Warbage Eco Solutions</strong> ("we", "us", or "our"). We are committed to maintaining the privacy, confidentiality, and security of all personal data entrusted to us.
+        </p>
+        <p>
+          This Privacy Policy applies to the <strong>Warbage mobile application</strong> (Package Name: <code>com.warbage.recycling</code>) available on the Google Play Store, along with our supporting backend cloud infrastructure hosted at <code>https://warbage.vercel.app</code>.
+        </p>
+        <p>
+          By downloading, installing, accessing, or using the Warbage app, you consent to the collection, processing, and handling of information described in this Policy. If you do not agree with this Privacy Policy, please discontinue using the service.
+        </p>
+      </section>
+
+      <!-- Section 2: Information We Collect -->
+      <section id="info-collected">
+        <h2><span class="section-num">2</span> Information We Collect</h2>
+        <p>
+          We strictly limit the data we collect to information that is technically and operationally essential for connecting waste collectors with authorized recyclers:
+        </p>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Data Category</th>
+                <th>Specific Data Items</th>
+                <th>Primary Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Account & Identity</strong></td>
+                <td>Full Name, Email address, Phone number, Profile role (<code>COLLECTOR</code> or <code>RECYCLER</code>), Firebase UID.</td>
+                <td>Authentication, profile verification, role authorization, and account security.</td>
+              </tr>
+              <tr>
+                <td><strong>E-Waste Lots</strong></td>
+                <td>Material category (e.g., Battery, PCB, Keyboard, Mobile), weight in kilograms, estimated scrap price, lot status.</td>
+                <td>Inventory management, transparent pricing calculation, and bilateral trade matching.</td>
+              </tr>
+              <tr>
+                <td><strong>Trade Requests & Transactions</strong></td>
+                <td>Collector contact details, Recycler facility name, proposed pickup date, status, notes, settlement amount.</td>
+                <td>Facilitating physical pickup, inspection, verification, and transaction history.</td>
+              </tr>
+              <tr>
+                <td><strong>Technical Metadata</strong></td>
+                <td>Firebase session tokens, app version code, crash logs.</td>
+                <td>Session management, bug fixing, service stability, and API authorization.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="alert alert-info">
+          <strong>Financial & Payment Cards:</strong> Warbage does NOT store or process bank account numbers, credit/debit card numbers, or CVVs. All scrap settlement valuations displayed in the application serve as operational guides for bilateral trade execution.
+        </div>
+      </section>
+
+      <!-- Section 3: Permissions & Camera -->
+      <section id="permissions">
+        <h2><span class="section-num">3</span> Device Permissions & Camera Policy</h2>
+        <p>
+          To maintain transparent adherence to the Google Play Developer Distribution Policy, the following device capabilities are requested only when necessary:
+        </p>
+
+        <h3>Camera Permission (<code>android.permission.CAMERA</code>)</h3>
+        <ul>
+          <li><strong>Purpose:</strong> The camera is used solely to enable real-time visual AI scanning of e-waste scrap items (such as identifying Printed Circuit Boards, Batteries, Mobile Devices, Appliances, and peripherals) and attaching optional lot inspection photos.</li>
+          <li><strong>On-Device Machine Learning:</strong> Image classification is executed <em>locally on your mobile device</em> using TensorFlow Lite / LiteRT neural network inference models.</li>
+          <li><strong>No Passive or Background Streaming:</strong> The camera feed is never accessed in the background, is never monitored passively, and raw camera frames are discarded immediately after local on-device inference completes.</li>
+        </ul>
+
+        <h3>Internet & Network State (<code>android.permission.INTERNET</code>, <code>android.permission.ACCESS_NETWORK_STATE</code>)</h3>
+        <ul>
+          <li><strong>Purpose:</strong> Allows the application to securely synchronize catalog prices, scrap lots, and requests with our encrypted cloud backend, as well as verify your authentication session.</li>
+        </ul>
+      </section>
+
+      <!-- Section 4: Location Policy -->
+      <section id="location">
+        <h2><span class="section-num">4</span> Location Data Policy (Zero GPS Tracking)</h2>
+        <div class="alert">
+          <strong>Zero Location Tracking Guarantee:</strong> Warbage does <strong>NOT</strong> request, collect, monitor, track, or share your device's GPS location, coarse background location, or fine foreground location. All location permissions (<code>ACCESS_FINE_LOCATION</code>, <code>ACCESS_COARSE_LOCATION</code>, <code>ACCESS_BACKGROUND_LOCATION</code>) have been completely removed from our production manifests.
+        </div>
+        <p>
+          Any geographical information visible in the app (such as a recycler's operational city, drop-off hub address, or pickup landmark) is manually typed and submitted by the registered user in their profile or trade request forms for operational coordination.
+        </p>
+      </section>
+
+      <!-- Section 5: How We Use Information -->
+      <section id="usage">
+        <h2><span class="section-num">5</span> How We Use Your Information</h2>
+        <p>We use the collected information exclusively to provide, maintain, and protect the recycling platform, specifically:</p>
+        <ol>
+          <li><strong>User Authentication:</strong> Verifying your identity via Firebase Email Verification or Google Sign-In, and preventing unauthorized access.</li>
+          <li><strong>Bilateral Scrap Exchange:</strong> Enabling collectors to publish available scrap quantities and enabling certified recyclers to review, accept, and schedule pickups.</li>
+          <li><strong>Pricing Accuracy:</strong> Providing transparent market baseline rates for distinct electronic waste categories.</li>
+          <li><strong>Account Management & Compliance:</strong> Responding to user support inquiries, processing account deletion requests, and fulfilling legal obligations.</li>
+        </ol>
+      </section>
+
+      <!-- Section 6: Bilateral Data Sharing -->
+      <section id="sharing">
+        <h2><span class="section-num">6</span> Bilateral Data Sharing & Disclosure</h2>
+        <p>
+          Warbage is a bilateral platform. In order for collectors and recyclers to physically transact electronic waste, certain operational contact data must be mutually visible between the transacting parties:
+        </p>
+        <ul>
+          <li><strong>When a Collector creates an offer with a Recycler:</strong> The designated Recycler can view the Collector's name, registered phone number, scrap lot contents, and operational notes to coordinate pickup.</li>
+          <li><strong>When a Collector views available Recyclers:</strong> The Collector can view the Recycler's name, contact information, offered price per kg, and drop-off/pickup location details.</li>
+        </ul>
+        <div class="alert alert-warning">
+          <strong>No Third-Party Commercial Sale:</strong> We strictly do <strong>NOT</strong> sell, rent, lease, trade, or monetize your personal data to advertisers, data brokers, or marketing intermediaries. Data is accessed solely by the parties participating in the specific recycling transaction.
+        </div>
+      </section>
+
+      <!-- Section 7: Third-Party Services -->
+      <section id="third-parties">
+        <h2><span class="section-num">7</span> Third-Party Services & SDKs</h2>
+        <p>
+          We partner with industry-standard, compliant infrastructure providers to ensure high availability, cryptographic security, and reliable performance:
+        </p>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Service Provider</th>
+                <th>Functionality</th>
+                <th>Privacy Documentation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Google Play Services</strong></td>
+                <td>App distribution, runtime APIs, and core security.</td>
+                <td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a></td>
+              </tr>
+              <tr>
+                <td><strong>Firebase Authentication</strong></td>
+                <td>Identity management, Google Sign-In, and email verification gating.</td>
+                <td><a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">Firebase Privacy Notice</a></td>
+              </tr>
+              <tr>
+                <td><strong>MongoDB Atlas</strong></td>
+                <td>Encrypted cloud database storage for user profiles and lots.</td>
+                <td><a href="https://www.mongodb.com/legal/privacy-policy" target="_blank" rel="noopener">MongoDB Privacy Policy</a></td>
+              </tr>
+              <tr>
+                <td><strong>Vercel Cloud Platform</strong></td>
+                <td>Serverless hosting infrastructure for the REST backend API.</td>
+                <td><a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel Privacy Policy</a></td>
+              </tr>
+              <tr>
+                <td><strong>TensorFlow Lite (LiteRT)</strong></td>
+                <td>Client-side on-device neural network inference for scrap classification.</td>
+                <td><a href="https://www.tensorflow.org/" target="_blank" rel="noopener">TensorFlow Terms</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 8: Security & Retention -->
+      <section id="security">
+        <h2><span class="section-num">8</span> Data Security & Storage Retention</h2>
+        <p>
+          We employ state-of-the-art administrative, physical, and electronic security safeguards:
+        </p>
+        <ul>
+          <li><strong>Encryption in Transit:</strong> All communications between the Warbage mobile client and backend servers are enforced over HTTPS utilizing TLS 1.2/1.3 with SHA-256 encryption.</li>
+          <li><strong>Authentication Tokens:</strong> API endpoints require cryptographically signed RS256 JSON Web Tokens (JWT) verified against Google Firebase public certificates.</li>
+          <li><strong>Data Isolation:</strong> Database access queries enforce strict tenancy filters, ensuring non-participating accounts cannot query or access private trade records.</li>
+          <li><strong>Retention Policy:</strong> Active account data is retained for the lifetime of your active profile to maintain your transaction and lot history. If you delete your account, your data is expunged according to the protocol below.</li>
+        </ul>
+      </section>
+
+      <!-- Section 9: Account & Data Deletion -->
+      <section id="deletion">
+        <h2><span class="section-num">9</span> Account & Data Deletion Policy</h2>
+        <p>
+          In full compliance with Google Play's Data Safety requirements and global privacy regulations, all users have the absolute right to permanently delete their account and associated personal information at any time.
+        </p>
+        
+        <h3>Method 1: Immediate Self-Service In-App Deletion</h3>
+        <p>You can delete your account directly inside the Android application in just three steps:</p>
+        <div class="step-box">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div>Open the <strong>Warbage</strong> app and tap the <strong>Profile</strong> tab in the bottom navigation bar.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Scroll to the bottom of the Profile screen and tap <strong>Delete Account</strong>.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div>Confirm the deletion prompt. The app immediately calls our secured <code>DELETE /api/users/:id</code> API, permanently wiping your user record, closing open scrap lots, and invalidating your login credentials.</div>
+          </div>
+        </div>
+
+        <h3>Method 2: Email & Web Deletion Request</h3>
+        <p>
+          If you no longer have access to the mobile application or wish to submit an offline erasure request:
+        </p>
+        <ul>
+          <li>Send an email to <strong><a href="mailto:privacy@warbage.eco?subject=Account%20and%20Data%20Deletion%20Request">privacy@warbage.eco</a></strong> or <strong><a href="mailto:support@warbage.eco?subject=Account%20and%20Data%20Deletion%20Request">support@warbage.eco</a></strong>.</li>
+          <li>Use the subject line: <code>Account and Data Deletion Request - Warbage</code>.</li>
+          <li>Provide your registered email address and phone number for ownership verification.</li>
+          <li>Upon verification, our administrative team will permanently purge your user profile, personal identifiers, open lots, and associated metadata from our database within <strong>30 days</strong>, and confirm completion via email.</li>
+        </ul>
+      </section>
+
+      <!-- Section 10: Children's Privacy -->
+      <section id="children">
+        <h2><span class="section-num">10</span> Children's Privacy</h2>
+        <p>
+          Warbage is designed strictly for adult collectors, commercial recyclers, and individuals of legal working age (18 years or older, or at least 13 with verified parental guidance where allowed by law). We do not knowingly solicit, collect, or store personal information from children under the age of 13.
+        </p>
+        <p>
+          If we discover that personal data has been inadvertently collected from a child under 13 without verified parental consent, we will immediately take steps to permanently delete that information from our records. If you believe a minor has provided us with personal information, please notify us immediately at <a href="mailto:privacy@warbage.eco">privacy@warbage.eco</a>.
+        </p>
+      </section>
+
+      <!-- Section 11: User Rights & Jurisdiction -->
+      <section id="rights">
+        <h2><span class="section-num">11</span> Your Rights & Legal Protections</h2>
+        <p>
+          Depending on your location, you may possess specific rights under data protection laws (such as GDPR, CCPA/CPRA, or the Digital Personal Data Protection Act):
+        </p>
+        <ul>
+          <li><strong>Right to Access:</strong> The right to request copies of the personal data we hold about you.</li>
+          <li><strong>Right to Rectification:</strong> The right to correct inaccurate or incomplete profile information directly via the app.</li>
+          <li><strong>Right to Erasure ("Right to be Forgotten"):</strong> The right to request the permanent deletion of your personal records.</li>
+          <li><strong>Right to Data Portability:</strong> The right to receive your transaction history in a structured, commonly used format.</li>
+        </ul>
+      </section>
+
+      <!-- Section 12: Contact Information -->
+      <section id="contact">
+        <h2><span class="section-num">12</span> Contact Us & Data Protection Officer</h2>
+        <p>
+          If you have questions, feedback, or concerns regarding this Privacy Policy, or wish to exercise any of your privacy rights, please contact our privacy compliance team:
+        </p>
+        <div class="step-box">
+          <p><strong>Warbage Eco Solutions</strong></p>
+          <p><strong>Lead Developer & Contact:</strong> Manish Raj Kamal</p>
+          <p><strong>Privacy Inquiries:</strong> <a href="mailto:privacy@warbage.eco">privacy@warbage.eco</a></p>
+          <p><strong>General Support:</strong> <a href="mailto:support@warbage.eco">support@warbage.eco</a></p>
+          <p><strong>Website & API Portal:</strong> <a href="https://warbage.vercel.app">https://warbage.vercel.app</a></p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Warbage Eco Solutions. All rights reserved.</p>
+    <p style="margin-top: 0.5rem;">
+      <a href="/privacy">Privacy Policy</a> &bull; 
+      <a href="https://github.com/manish-raj-kamal/Warbage" target="_blank" rel="noopener">GitHub Repository</a> &bull;
+      <a href="mailto:privacy@warbage.eco">Contact Privacy Team</a>
+    </p>
+  </footer>
+
+</body>
+</html>`;
+}
+
+module.exports = { getPrivacyPolicyHtml };

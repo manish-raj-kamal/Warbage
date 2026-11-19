@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const crypto = require('crypto');
 const https = require('https');
+const path = require('path');
 require('dotenv').config();
 
 const Material = require('./models/Material');
@@ -11,6 +12,7 @@ const Price = require('./models/Price');
 const User = require('./models/User');
 const Lot = require('./models/Lot');
 const Request = require('./models/Request');
+const { getPrivacyPolicyHtml } = require('./privacyPolicy');
 
 const app = express();
 
@@ -27,10 +29,23 @@ app.use((req, res, next) => {
 // Optional Helmet if installed
 try {
   const helmet = require('helmet');
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+        fontSrc: ["'self'", "https:", "data:"],
+        imgSrc: ["'self'", "data:", "https:"],
+        scriptSrc: ["'self'", "'unsafe-inline'"]
+      }
+    }
+  }));
 } catch (_) {
   // Graceful fallback to manual headers above
 }
+
+// Serve public static assets
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Configurable CORS
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
@@ -278,12 +293,21 @@ async function requireAuth(req, res, next) {
   }
 }
 
-// Health Check
+// Privacy Policy Web Endpoints (Compliant with Google Play & GDPR)
+const privacyHtml = getPrivacyPolicyHtml();
+app.get(['/privacy', '/privacy-policy', '/privacy.html'], (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+  res.send(privacyHtml);
+});
+
+// Health Check & Root Service Discovery
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
     service: 'Warbage Eco Backend API',
-    version: '1.2.0'
+    version: '1.2.0',
+    privacyPolicy: 'https://warbage.vercel.app/privacy'
   });
 });
 
