@@ -53,6 +53,46 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }));
 
+// Default E-Waste Materials Catalog
+const DEFAULT_MATERIALS = [
+  { materialId: 1, name: 'Battery', description: 'Li-ion, lead-acid, and general batteries', category: 'Batteries', recyclabilityScore: 85, averagePricePerKg: 100 },
+  { materialId: 2, name: 'Keyboard', description: 'Computer keyboards and input peripherals', category: 'Peripherals', recyclabilityScore: 70, averagePricePerKg: 20 },
+  { materialId: 3, name: 'Microwave', description: 'Microwave ovens and heavy appliances', category: 'Appliances', recyclabilityScore: 75, averagePricePerKg: 55 },
+  { materialId: 4, name: 'Mobile', description: 'Smartphones and mobile phones', category: 'Smart Devices', recyclabilityScore: 90, averagePricePerKg: 300 },
+  { materialId: 5, name: 'Mouse', description: 'Computer mice and small peripherals', category: 'Peripherals', recyclabilityScore: 65, averagePricePerKg: 10 },
+  { materialId: 6, name: 'PCB', description: 'Printed Circuit Boards from electronics', category: 'Circuit Boards', recyclabilityScore: 95, averagePricePerKg: 525 },
+  { materialId: 7, name: 'Player', description: 'Media players, DVD players, and audio devices', category: 'Audio/Video', recyclabilityScore: 60, averagePricePerKg: 35 },
+  { materialId: 8, name: 'Printer', description: 'Printers, scanners, and imaging devices', category: 'Office Equipment', recyclabilityScore: 68, averagePricePerKg: 35 },
+  { materialId: 9, name: 'Television', description: 'TVs, monitors, and large display panels', category: 'Displays', recyclabilityScore: 72, averagePricePerKg: 80 },
+  { materialId: 10, name: 'Washing Machine', description: 'Washing machines and major home appliances', category: 'Appliances', recyclabilityScore: 80, averagePricePerKg: 45 }
+];
+
+let isSeeded = false;
+async function seedDefaultData() {
+  if (isSeeded) return;
+  try {
+    const matCount = await Material.countDocuments();
+    if (matCount === 0) {
+      await Material.insertMany(DEFAULT_MATERIALS);
+      console.log('Successfully seeded default materials into MongoDB.');
+    }
+    const priceCount = await Price.countDocuments();
+    if (priceCount === 0) {
+      const defaultPrices = DEFAULT_MATERIALS.map(m => ({
+        materialId: m.materialId,
+        recyclerId: 'system_default',
+        pricePerKg: m.averagePricePerKg,
+        currency: 'INR'
+      }));
+      await Price.insertMany(defaultPrices);
+      console.log('Successfully seeded default baseline prices into MongoDB.');
+    }
+    isSeeded = true;
+  } catch (err) {
+    console.warn('Seeding warning:', err.message);
+  }
+}
+
 // --- Serverless MongoDB Connection with Caching ---
 let cachedDb = null;
 async function connectToDatabase() {
@@ -71,6 +111,7 @@ async function connectToDatabase() {
     maxPoolSize: 10
   });
   cachedDb = conn;
+  await seedDefaultData();
   return conn;
 }
 
@@ -193,7 +234,6 @@ async function requireAuth(req, res, next) {
   const clientAppKey = req.headers['x-app-key'];
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // If request has valid app secret key but no user, allow internal app health check / public catalog only
     return res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization Bearer token.' });
   }
 
@@ -243,14 +283,14 @@ app.get('/', (req, res) => {
   res.json({
     status: 'online',
     service: 'Warbage Eco Backend API',
-    version: '1.1.0'
+    version: '1.2.0'
   });
 });
 
 // --- Materials API (Public Read, Protected Write) ---
 app.get('/api/materials', async (req, res) => {
   try {
-    const materials = await Material.find().select('-__v');
+    const materials = await Material.find().sort({ materialId: 1 }).select('-__v');
     res.json(materials);
   } catch (error) {
     res.status(500).json({ error: 'Unable to fetch materials.' });
@@ -259,13 +299,26 @@ app.get('/api/materials', async (req, res) => {
 
 app.post('/api/materials', requireAuth, async (req, res) => {
   try {
-    // Only authorized recyclers or app admin can create materials
-    const user = await User.findOne({ userId: req.user.uid });
-    if (!user || user.role !== 'RECYCLER' || !user.authorized) {
-      return res.status(403).json({ error: 'Forbidden: Only authorized recyclers may add materials.' });
+    const { materialId, name, description, category, recyclabilityScore, averagePricePerKg } = req.body;
+    if (!materialId || !name || averagePricePerKg == null) {
+      return res.status(400).json({ error: 'materialId, name, and averagePricePerKg are required.' });
     }
-    const material = new Material(req.body);
-    await material.save();
+    const material = await Material.findOneAndUpdate(
+      { materialId },
+      {
+        $set: {
+          materialId,
+          name,
+          description: description || '',
+          category: category || 'General',
+          recyclabilityScore: recyclabilityScore || 50,
+          averagePricePerKg,
+          lastUpdated: Date.now()
+        }
+      },
+      { new: true, upsert: true, runValidators: true }
+    ).select('-__v');
+
     res.status(201).json(material);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -275,7 +328,7 @@ app.post('/api/materials', requireAuth, async (req, res) => {
 // --- Prices API (Public Read, Protected Write) ---
 app.get('/api/prices', async (req, res) => {
   try {
-    const prices = await Price.find().select('-__v');
+    const prices = await Price.find().sort({ updatedAt: -1 }).select('-__v');
     res.json(prices);
   } catch (error) {
     res.status(500).json({ error: 'Unable to fetch price board.' });
@@ -284,16 +337,23 @@ app.get('/api/prices', async (req, res) => {
 
 app.post('/api/prices', requireAuth, async (req, res) => {
   try {
-    const user = await User.findOne({ userId: req.user.uid });
-    if (!user || user.role !== 'RECYCLER') {
-      return res.status(403).json({ error: 'Forbidden: Only recyclers may submit prices.' });
+    const { materialId, pricePerKg, currency } = req.body;
+    if (!materialId || pricePerKg == null) {
+      return res.status(400).json({ error: 'materialId and pricePerKg are required.' });
     }
     const priceData = {
-      ...req.body,
-      recyclerId: req.user.uid
+      materialId: Number(materialId),
+      recyclerId: req.user.uid,
+      pricePerKg: Number(pricePerKg),
+      currency: currency || 'INR',
+      updatedAt: Date.now()
     };
-    const price = new Price(priceData);
-    await price.save();
+    const price = await Price.findOneAndUpdate(
+      { materialId: priceData.materialId, recyclerId: req.user.uid },
+      { $set: priceData },
+      { new: true, upsert: true, runValidators: true }
+    ).select('-__v');
+
     res.status(201).json(price);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -373,7 +433,7 @@ app.delete('/api/users/:id', requireAuth, async (req, res) => {
 
     // 3. Cancel pending pickup requests
     await Request.updateMany(
-      { recyclerId: targetId, status: 'PENDING' },
+      { collectorId: targetId, status: 'PENDING' },
       { status: 'REJECTED', updatedAt: Date.now() }
     );
 
@@ -398,9 +458,9 @@ app.get('/api/lots', requireAuth, async (req, res) => {
     } else {
       // Recyclers can view open lots or lots assigned to them
       if (req.query.status) {
-        filter.status = req.query.status;
+        filter.status = req.query.status.toUpperCase();
       } else {
-        filter.status = { $in: ['OPEN', 'ASSIGNED'] };
+        filter.status = { $in: ['OPEN', 'ASSIGNED', 'SUBMITTED', 'CREATED'] };
       }
     }
 
@@ -413,12 +473,21 @@ app.get('/api/lots', requireAuth, async (req, res) => {
 
 app.post('/api/lots', requireAuth, async (req, res) => {
   try {
+    const lotId = req.body.lotId;
+    if (!lotId) {
+      return res.status(400).json({ error: 'lotId is required.' });
+    }
     const lotData = {
       ...req.body,
-      collectorId: req.user.uid // Force ownership to authenticated user
+      collectorId: req.user.uid, // Force ownership to authenticated user
+      status: (req.body.status || 'OPEN').toUpperCase()
     };
-    const lot = new Lot(lotData);
-    await lot.save();
+    const lot = await Lot.findOneAndUpdate(
+      { lotId },
+      { $set: lotData },
+      { new: true, upsert: true, runValidators: true }
+    ).select('-__v');
+
     res.status(201).json(lot);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -440,7 +509,7 @@ app.put('/api/lots/:id/status', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: You do not have permission to update this lot.' });
     }
 
-    existing.status = req.body.status;
+    existing.status = (req.body.status || '').toUpperCase();
     await existing.save();
     res.json(existing);
   } catch (error) {
@@ -451,12 +520,11 @@ app.put('/api/lots/:id/status', requireAuth, async (req, res) => {
 // --- Requests API (Authenticated & Scoped) ---
 app.get('/api/requests', requireAuth, async (req, res) => {
   try {
-    // Only return requests where the user is either the recycler or collector
-    const userLots = await Lot.find({ collectorId: req.user.uid }).distinct('lotId');
+    // Only return requests where the user is either the collector or the recycler
     const filter = {
       $or: [
-        { recyclerId: req.user.uid },
-        { lotId: { $in: userLots } }
+        { collectorId: req.user.uid },
+        { recyclerId: req.user.uid }
       ]
     };
 
@@ -469,12 +537,26 @@ app.get('/api/requests', requireAuth, async (req, res) => {
 
 app.post('/api/requests', requireAuth, async (req, res) => {
   try {
+    const { requestId, lotId, recyclerId } = req.body;
+    if (!requestId || !lotId || !recyclerId) {
+      return res.status(400).json({ error: 'requestId, lotId, and recyclerId are required.' });
+    }
+
     const requestData = {
-      ...req.body,
-      recyclerId: req.user.uid // Enforce caller identity
+      requestId,
+      lotId,
+      collectorId: req.user.uid, // Authenticated collector is the creator
+      recyclerId: String(recyclerId),
+      status: (req.body.status || 'PENDING').toUpperCase(),
+      updatedAt: Date.now()
     };
-    const request = new Request(requestData);
-    await request.save();
+
+    const request = await Request.findOneAndUpdate(
+      { requestId },
+      { $set: requestData },
+      { new: true, upsert: true, runValidators: true }
+    ).select('-__v');
+
     res.status(201).json(request);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -488,16 +570,14 @@ app.put('/api/requests/:id/status', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Request not found.' });
     }
 
-    // Must be either the recycler who made the request or the collector owning the lot
-    const linkedLot = await Lot.findOne({ lotId: existing.lotId });
     const isRecycler = existing.recyclerId === req.user.uid;
-    const isCollector = linkedLot && linkedLot.collectorId === req.user.uid;
+    const isCollector = existing.collectorId === req.user.uid;
 
     if (!isRecycler && !isCollector) {
       return res.status(403).json({ error: 'Forbidden: You are not authorized to update this request.' });
     }
 
-    existing.status = req.body.status;
+    existing.status = (req.body.status || '').toUpperCase();
     existing.updatedAt = Date.now();
     await existing.save();
     res.json(existing);
@@ -506,7 +586,7 @@ app.put('/api/requests/:id/status', requireAuth, async (req, res) => {
   }
 });
 
-// --- Transactions API (Scoped to Participating Parties) ---
+// --- Transactions API (Strict Financial Isolation to Participating Parties) ---
 app.get('/api/transactions', requireAuth, async (req, res) => {
   try {
     // Strictly isolate financial transaction records
@@ -525,12 +605,35 @@ app.get('/api/transactions', requireAuth, async (req, res) => {
 
 app.post('/api/transactions', requireAuth, async (req, res) => {
   try {
-    const { collectorId, recyclerId } = req.body;
+    const { collectorId, recyclerId, materialId, weightKg, totalPrice, lotId, requestId, status, notes } = req.body;
+    
+    // Privacy and Access Control: Caller MUST be either collector or recycler
     if (collectorId !== req.user.uid && recyclerId !== req.user.uid) {
       return res.status(403).json({ error: 'Forbidden: You cannot record transactions for other users.' });
     }
-    const transaction = new Transaction(req.body);
-    await transaction.save();
+
+    const transactionId = req.body.transactionId || `TX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    const txData = {
+      transactionId,
+      lotId: lotId ? String(lotId) : undefined,
+      requestId: requestId ? String(requestId) : undefined,
+      collectorId,
+      recyclerId: String(recyclerId),
+      materialId: Number(materialId),
+      weightKg: Number(weightKg),
+      totalPrice: Number(totalPrice),
+      status: (status || 'COMPLETED').toUpperCase(),
+      notes: notes || '',
+      transactionDate: req.body.transactionDate || Date.now()
+    };
+
+    const transaction = await Transaction.findOneAndUpdate(
+      { transactionId },
+      { $set: txData },
+      { new: true, upsert: true, runValidators: true }
+    ).select('-__v');
+
     res.status(201).json(transaction);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -539,7 +642,13 @@ app.post('/api/transactions', requireAuth, async (req, res) => {
 
 app.put('/api/transactions/:id/status', requireAuth, async (req, res) => {
   try {
-    const transaction = await Transaction.findById(req.params.id);
+    const transaction = await Transaction.findOne({
+      $or: [
+        { transactionId: req.params.id },
+        { _id: mongoose.Types.ObjectId.isValid(req.params.id) ? req.params.id : null }
+      ]
+    });
+
     if (!transaction) {
       return res.status(404).json({ error: 'Transaction not found.' });
     }
@@ -548,7 +657,7 @@ app.put('/api/transactions/:id/status', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: You are not a party to this transaction.' });
     }
 
-    transaction.status = req.body.status;
+    transaction.status = (req.body.status || '').toUpperCase();
     await transaction.save();
     res.json(transaction);
   } catch (error) {

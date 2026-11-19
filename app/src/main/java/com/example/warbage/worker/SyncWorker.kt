@@ -5,15 +5,17 @@ import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.warbage.data.WarbageDatabase
+import com.example.warbage.data.repository.MaterialRepository
+import com.example.warbage.network.BackendLot
+import com.example.warbage.network.BackendRequest
+import com.example.warbage.network.RetrofitClient
 import kotlinx.coroutines.flow.first
 
 /**
  * SyncWorker — Background sync using WorkManager.
  *
- * For V1, this demonstrates the WorkManager/CoroutineWorker pattern:
- * - Checks for pending lots that haven't been synced
- * - Logs sync activity
- * - In V2, this would upload to a cloud backend
+ * Ensures all lots, requests, materials, and transactions are synchronized with
+ * the secured cloud backend database.
  */
 class SyncWorker(
     context: Context,
@@ -26,27 +28,71 @@ class SyncWorker(
     }
 
     override suspend fun doWork(): Result {
-        Log.d(TAG, "SyncWorker started — checking for pending data...")
+        Log.d(TAG, "SyncWorker started — synchronizing lots, requests, materials, and prices...")
 
         return try {
             val database = WarbageDatabase.getDatabase(applicationContext)
 
-            // Get all lots
+            // 1. Sync Materials & Prices with Backend
+            val materialRepo = MaterialRepository(database.materialDao())
+            materialRepo.syncWithBackend()
+
+            try {
+                val prices = RetrofitClient.api.getPrices()
+                Log.d(TAG, "Synchronized ${prices.size} price records from backend")
+            } catch (e: Exception) {
+                Log.w(TAG, "Price board sync notice: ${e.message}")
+            }
+
+            // 2. Sync Local Lots to Backend
             val lots = database.lotDao().getAllLots().first()
-            val pendingLots = lots.filter { it.status == "created" || it.status == "submitted" }
+            var lotsSynced = 0
+            for (lot in lots) {
+                try {
+                    val backendLot = BackendLot(
+                        lotId = lot.lotId,
+                        collectorId = lot.userId,
+                        materialId = lot.materialId,
+                        weight = lot.weight,
+                        estimatedMinValue = lot.estimatedMinValue,
+                        estimatedMaxValue = lot.estimatedMaxValue,
+                        description = lot.description,
+                        status = lot.status.uppercase()
+                    )
+                    RetrofitClient.api.createLot(backendLot)
+                    lotsSynced++
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to sync lot ${lot.lotId}: ${e.message}")
+                }
+            }
+            Log.d(TAG, "Synced $lotsSynced / ${lots.size} lots to backend")
 
-            Log.d(TAG, "Total lots: ${lots.size}, Pending sync: ${pendingLots.size}")
-
-            // Get all requests
+            // 3. Sync Local Requests to Backend
             val requests = database.requestDao().getAllRequests().first()
-            val pendingRequests = requests.filter { it.status == "pending" }
+            var requestsSynced = 0
+            for (req in requests) {
+                try {
+                    val backendReq = BackendRequest(
+                        requestId = req.requestId,
+                        lotId = req.lotId.toString(),
+                        collectorId = req.userId,
+                        recyclerId = req.recyclerId.toString(),
+                        status = req.status.uppercase()
+                    )
+                    RetrofitClient.api.createRequest(backendReq)
+                    requestsSynced++
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to sync request ${req.requestId}: ${e.message}")
+                }
+            }
+            Log.d(TAG, "Synced $requestsSynced / ${requests.size} requests to backend")
 
-            Log.d(TAG, "Total requests: ${requests.size}, Pending: ${pendingRequests.size}")
-
-            // In V2: Upload pending items to cloud backend
-            // For V1: Just log that we'd sync
-            pendingLots.forEach { lot ->
-                Log.d(TAG, "Would sync lot: ${lot.lotId} (${lot.status})")
+            // 4. Fetch User's Transactions from Backend
+            try {
+                val transactions = RetrofitClient.api.getTransactions()
+                Log.d(TAG, "Fetched ${transactions.size} transactions from backend")
+            } catch (e: Exception) {
+                Log.w(TAG, "Transaction query notice: ${e.message}")
             }
 
             Log.d(TAG, "SyncWorker completed successfully")

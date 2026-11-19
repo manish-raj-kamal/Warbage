@@ -26,6 +26,9 @@ import com.example.warbage.ui.glass.LiquidTopAppBar
 import com.example.warbage.ui.glass.liquidGlass
 import com.example.warbage.ui.theme.CyanBright
 import com.example.warbage.ui.theme.EmeraldBright
+import android.util.Log
+import com.example.warbage.network.BackendTransaction
+import com.example.warbage.network.RetrofitClient
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -187,6 +190,30 @@ fun RequestDetailScreen(
                                 scope.launch {
                                     requestRepository.updateStatus(req.id, "completed")
                                     lot?.let { lotRepository.updateStatus(it.id, "completed") }
+
+                                    // Record transaction in MongoDB backend
+                                    try {
+                                        val weight = lot?.weight ?: 1.0
+                                        val price = recycler?.pricePerKg?.toDouble() ?: 100.0
+                                        val total = weight * price
+                                        val tx = BackendTransaction(
+                                            transactionId = "TX-${req.requestId}",
+                                            lotId = lot?.lotId,
+                                            requestId = req.requestId,
+                                            collectorId = req.userId.ifEmpty { lot?.userId ?: "" },
+                                            recyclerId = req.recyclerId.toString(),
+                                            materialId = lot?.materialId ?: 1,
+                                            weightKg = weight,
+                                            totalPrice = total,
+                                            status = "COMPLETED",
+                                            notes = "Handover completed for request ${req.requestId}",
+                                            transactionDate = System.currentTimeMillis()
+                                        )
+                                        RetrofitClient.api.createTransaction(tx)
+                                        Log.d("RequestDetail", "Successfully created transaction for ${req.requestId}")
+                                    } catch (e: Exception) {
+                                        Log.e("RequestDetail", "Failed to create transaction on backend", e)
+                                    }
                                 }
                             },
                             modifier = Modifier

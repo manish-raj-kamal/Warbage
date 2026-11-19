@@ -8,7 +8,13 @@ const lotSchema = new mongoose.Schema({
   estimatedMinValue: { type: Number, min: 0 },
   estimatedMaxValue: { type: Number, min: 0 },
   description: { type: String, trim: true },
-  status: { type: String, enum: ['OPEN', 'ASSIGNED', 'COMPLETED', 'CANCELLED'], default: 'OPEN', index: true },
+  status: {
+    type: String,
+    uppercase: true,
+    enum: ['OPEN', 'CREATED', 'SUBMITTED', 'ASSIGNED', 'ACCEPTED', 'REJECTED', 'COMPLETED', 'CANCELLED'],
+    default: 'OPEN',
+    index: true
+  },
   dateCreated: { type: Date, default: Date.now }
 });
 

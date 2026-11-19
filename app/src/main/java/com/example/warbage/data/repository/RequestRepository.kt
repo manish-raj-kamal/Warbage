@@ -1,9 +1,11 @@
 package com.example.warbage.data.repository
 
+import android.util.Log
 import com.example.warbage.data.dao.RequestDao
 import com.example.warbage.data.entity.RequestEntity
 import com.example.warbage.network.BackendRequest
 import com.example.warbage.network.RetrofitClient
+import com.example.warbage.network.StatusUpdate
 import kotlinx.coroutines.flow.Flow
 
 class RequestRepository(private val requestDao: RequestDao) {
@@ -18,22 +20,38 @@ class RequestRepository(private val requestDao: RequestDao) {
 
     suspend fun insert(request: RequestEntity): Long {
         val id = requestDao.insert(request)
-        // Sync to backend
+        syncRequestToBackend(request)
+        return id
+    }
+
+    suspend fun syncRequestToBackend(request: RequestEntity) {
         try {
             val backendReq = BackendRequest(
                 requestId = request.requestId,
                 lotId = request.lotId.toString(),
+                collectorId = request.userId,
                 recyclerId = request.recyclerId.toString(),
-                status = request.status
+                status = request.status.uppercase()
             )
             RetrofitClient.api.createRequest(backendReq)
+            Log.d("RequestRepository", "Successfully synced request ${request.requestId} to backend")
         } catch (e: Exception) {
-            android.util.Log.e("RequestRepository", "Failed to sync request to backend", e)
+            Log.e("RequestRepository", "Failed to sync request ${request.requestId} to backend", e)
         }
-        return id
     }
 
-    suspend fun updateStatus(id: Int, status: String) = requestDao.updateStatus(id, status)
+    suspend fun updateStatus(id: Int, status: String) {
+        requestDao.updateStatus(id, status)
+        try {
+            val req = requestDao.getRequestByIdOnce(id)
+            if (req != null) {
+                RetrofitClient.api.updateRequestStatus(req.requestId, StatusUpdate(status.uppercase()))
+                Log.d("RequestRepository", "Synced request status ${req.requestId} -> $status to backend")
+            }
+        } catch (e: Exception) {
+            Log.e("RequestRepository", "Failed to sync request status update to backend", e)
+        }
+    }
 
     suspend fun getNextRequestNumber(): Int = requestDao.getRequestCount() + 1
 }

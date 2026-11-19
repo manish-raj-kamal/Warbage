@@ -49,21 +49,8 @@ fun PriceBoardScreen(
     LaunchedEffect(Unit) {
         scope.launch {
             try {
-                val backendMaterials = RetrofitClient.api.getMaterials()
-                if (backendMaterials.isNotEmpty()) {
-                    val updatedMaterials = backendMaterials.map {
-                        MaterialEntity(
-                            id = it.materialId,
-                            name = it.name,
-                            description = it.description,
-                            minPrice = (it.averagePricePerKg * 0.8).toInt(), // Simplified min
-                            maxPrice = (it.averagePricePerKg * 1.2).toInt(), // Simplified max
-                            unit = "kg",
-                            icon = "♻️"
-                        )
-                    }
-                    database.materialDao().insertAll(updatedMaterials)
-                }
+                val materialRepo = com.example.warbage.data.repository.MaterialRepository(database.materialDao())
+                materialRepo.syncWithBackend()
             } catch (e: Exception) {
                 android.util.Log.e("PriceBoard", "Failed to fetch live prices", e)
             }

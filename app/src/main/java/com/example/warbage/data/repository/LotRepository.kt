@@ -1,9 +1,11 @@
 package com.example.warbage.data.repository
 
+import android.util.Log
 import com.example.warbage.data.dao.LotDao
 import com.example.warbage.data.entity.LotEntity
 import com.example.warbage.network.BackendLot
 import com.example.warbage.network.RetrofitClient
+import com.example.warbage.network.StatusUpdate
 import kotlinx.coroutines.flow.Flow
 
 class LotRepository(private val lotDao: LotDao) {
@@ -18,7 +20,11 @@ class LotRepository(private val lotDao: LotDao) {
 
     suspend fun insert(lot: LotEntity): Long {
         val id = lotDao.insert(lot)
-        // Sync to backend
+        syncLotToBackend(lot)
+        return id
+    }
+
+    suspend fun syncLotToBackend(lot: LotEntity) {
         try {
             val backendLot = BackendLot(
                 lotId = lot.lotId,
@@ -28,16 +34,27 @@ class LotRepository(private val lotDao: LotDao) {
                 estimatedMinValue = lot.estimatedMinValue,
                 estimatedMaxValue = lot.estimatedMaxValue,
                 description = lot.description,
-                status = lot.status
+                status = lot.status.uppercase()
             )
             RetrofitClient.api.createLot(backendLot)
+            Log.d("LotRepository", "Successfully synced lot ${lot.lotId} to backend")
         } catch (e: Exception) {
-            android.util.Log.e("LotRepository", "Failed to sync lot to backend", e)
+            Log.e("LotRepository", "Failed to sync lot ${lot.lotId} to backend", e)
         }
-        return id
     }
 
-    suspend fun updateStatus(id: Int, status: String) = lotDao.updateStatus(id, status)
+    suspend fun updateStatus(id: Int, status: String) {
+        lotDao.updateStatus(id, status)
+        try {
+            val lot = lotDao.getLotByIdOnce(id)
+            if (lot != null) {
+                RetrofitClient.api.updateLotStatus(lot.lotId, StatusUpdate(status.uppercase()))
+                Log.d("LotRepository", "Synced lot status ${lot.lotId} -> $status to backend")
+            }
+        } catch (e: Exception) {
+            Log.e("LotRepository", "Failed to sync lot status update to backend", e)
+        }
+    }
 
     suspend fun getNextLotNumber(): Int = lotDao.getLotCount() + 1
 }

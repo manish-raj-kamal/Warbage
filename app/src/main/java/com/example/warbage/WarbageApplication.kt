@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.warbage.auth.AuthManager
@@ -56,5 +57,11 @@ class WarbageApplication : Application() {
             ExistingPeriodicWorkPolicy.KEEP,
             syncRequest
         )
+
+        // Also run an immediate one-time sync on launch if network is connected
+        val immediateSync = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(this).enqueue(immediateSync)
     }
 }
